@@ -1,12 +1,34 @@
 import {
-  cors,
   db,
-  fail,
+  cors,
   out,
+  fail,
   verifyTelegram
 } from '../_shared.ts';
 
-Deno.serve(async (req) => {
+function dateKey() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function seeded(date: string, n: number) {
+  let h = 2166136261;
+
+  for (const c of date) {
+    h = Math.imul(
+      h ^ c.charCodeAt(0),
+      16777619
+    );
+  }
+
+  h = Math.abs(h);
+
+  return (
+    h +
+    n * 1013904223
+  ) >>> 0;
+}
+
+Deno.serve(async req => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', {
       headers: cors
@@ -16,207 +38,235 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json();
 
-    const { user: tgUser } =
-      await verifyTelegram(
-        String(body.initData || '')
-      );
+    const {
+      initData,
+      action
+    } = body;
 
-    const supabase = db();
-    const telegramId = Number(tgUser.id);
+    const {
+      user: tgUser
+    } = await verifyTelegram(initData);
 
-    const today =
-      new Date().toISOString().slice(0, 10);
+    const supa = db();
 
-    const action =
-      String(body.action || 'get');
+    const today = dateKey();
 
-    // GET TODAY'S COMBO
-    if (action === 'get') {
-      let { data: combo } =
-        await supabase
-          .from('daily_combos')
-          .select('*')
-          .eq('combo_date', today)
-          .maybeSingle();
+    // Get all Mine cards
+    const {
+      data: cards,
+      error: cardsErr
+    } = await supa
+      .from('upgrades')
+      .select('*')
+      .order('id');
 
-      if (!combo) {
-        const { data: cards } =
-          await supabase
-            .from('upgrades')
-            .select('*')
-            .order('id', {
-              ascending: true
-            });
-
-        if (!cards || cards.length < 3) {
-          throw new Error(
-            'Not enough Mine cards to create the Daily Combo.'
-          );
-        }
-
-        // Pick 3 cards for today's combo.
-        const shuffled = [...cards].sort(
-          () => Math.random() - 0.5
-        );
-
-        const selected =
-          shuffled.slice(0, 3);
-
-        const { data: created, error } =
-          await supabase
-            .from('daily_combos')
-            .insert({
-              combo_date: today,
-              card1_id: selected[0].id,
-              card2_id: selected[1].id,
-              card3_id: selected[2].id,
-              reward: 5000000
-            })
-            .select('*')
-            .single();
-
-        if (error) throw error;
-
-        combo = created;
-      }
-
-      const ids = [
-        combo.card1_id,
-        combo.card2_id,
-        combo.card3_id
-      ];
-
-      const { data: cards } =
-        await supabase
-          .from('upgrades')
-          .select('*')
-          .in('id', ids);
-
-      return out({
-        ok: true,
-        combo,
-        cards: cards || [],
-        date: today
-      });
+    if (cardsErr) {
+      throw cardsErr;
     }
 
-    // CLAIM DAILY COMBO
+    if (!cards || cards.length < 3) {
+      throw new Error(
+        'Add at least 3 Mine cards before using Daily Combo.'
+      );
+    }
+
+    // Find today's combo
+    let {
+      data: combo
+    } = await supa
+      .from('daily_combos')
+      .select('*')
+      .eq('combo_date', today)
+      .maybeSingle();
+
+    // Create today's combo if it does not exist
+    if (!combo) {
+      const indexes = new Set<number>();
+
+      let i = 0;
+
+      while (indexes.size < 3) {
+        indexes.add(
+          seeded(today, i++) % cards.length
+        );
+      }
+
+      const ids = [...indexes].map(
+        index => cards[index].id
+      );
+
+      const {
+        data: created,
+        error: createErr
+      } = await supa
+        .from('daily_combos')
+        .insert({
+          combo_date: today,
+          card_1: ids[0],
+          card_2: ids[1],
+          card_3: ids[2],
+          reward: 5000000
+        })
+        .select('*')
+        .single();
+
+      if (createErr) {
+        throw createErr;
+      }
+
+      combo = created;
+    }
+
+    // The database uses card_1, card_2 and card_3
+    const ids = [
+      combo.card_1,
+      combo.card_2,
+      combo.card_3
+    ];
+
+    // Get the actual card information
+    const chosen = cards.filter(card =>
+      ids.includes(card.id)
+    );
+
+    // Get the user's owned upgrades
+    const {
+      data: owned,
+      error: ownedErr
+    } = await supa
+      .from('user_upgrades')
+      .select('upgrade_id,level')
+      .eq('telegram_id', tgUser.id)
+      .in('upgrade_id', ids);
+
+    if (ownedErr) {
+      throw ownedErr;
+    }
+
+    const ownedMap = new Map(
+      (owned || []).map(item => [
+        Number(item.upgrade_id),
+        Number(item.level)
+      ])
+    );
+
+    // User must own all 3 cards
+    const complete = ids.every(
+      id =>
+        (ownedMap.get(Number(id)) || 0) > 0
+    );
+
+    // Get user
+    const {
+      data: user,
+      error: userErr
+    } = await supa
+      .from('users')
+      .select('*')
+      .eq('telegram_id', tgUser.id)
+      .single();
+
+    if (userErr || !user) {
+      throw new Error(
+        'EBiTO account not found.'
+      );
+    }
+
+    // Check whether today's reward has already been claimed
+    const claimed =
+      user.last_daily_combo === today &&
+      user.daily_combo_claimed === true;
+
+    // Claim reward
     if (action === 'claim') {
-      const { data: combo } =
-        await supabase
-          .from('daily_combos')
-          .select('*')
-          .eq('combo_date', today)
-          .maybeSingle();
 
-      if (!combo) {
-        throw new Error(
-          'Today\'s Daily Combo does not exist.'
-        );
-      }
-
-      const { data: user } =
-        await supabase
-          .from('users')
-          .select('*')
-          .eq('telegram_id', telegramId)
-          .single();
-
-      if (!user) {
-        throw new Error(
-          'User account not found.'
-        );
-      }
-
-      if (user.last_daily_combo === today) {
+      if (claimed) {
         throw new Error(
           'Daily Combo reward already claimed today.'
         );
       }
 
-      const requiredCards = [
-        combo.card1_id,
-        combo.card2_id,
-        combo.card3_id
-      ];
-
-      const { data: owned } =
-        await supabase
-          .from('user_upgrades')
-          .select('upgrade_id, level')
-          .eq('telegram_id', telegramId)
-          .in('upgrade_id', requiredCards);
-
-      const ownedIds =
-        new Set(
-          (owned || []).map(
-            x => Number(x.upgrade_id)
-          )
-        );
-
-      const complete =
-        requiredCards.every(
-          id => ownedIds.has(Number(id))
-        );
-
       if (!complete) {
         throw new Error(
-          'You must own all 3 Daily Combo cards before claiming the reward.'
+          'Upgrade all 3 Daily Combo cards first.'
         );
       }
 
       const reward =
         Number(combo.reward || 5000000);
 
-      const { data: updated, error } =
-        await supabase
-          .from('users')
-          .update({
-            coins:
-              Number(user.coins || 0) + reward,
-            airdrop_points:
-              Number(user.airdrop_points || 0) + reward,
-            last_daily_combo: today,
-            daily_combo_claimed: true,
-            updated_at:
-              new Date().toISOString()
-          })
-          .eq('telegram_id', telegramId)
-          .select('*')
-          .single();
+      const {
+        data: updated,
+        error: updateErr
+      } = await supa
+        .from('users')
+        .update({
+          coins:
+            Number(user.coins) + reward,
 
-      if (error) throw error;
+          airdrop_points:
+            Number(user.airdrop_points || 0) +
+            reward,
 
-      await supabase
+          last_daily_combo: today,
+
+          daily_combo_claimed: true,
+
+          updated_at:
+            new Date().toISOString()
+        })
+        .eq('telegram_id', tgUser.id)
+        .select('*')
+        .single();
+
+      if (updateErr) {
+        throw updateErr;
+      }
+
+      // Record transaction
+      const {
+        error: transactionErr
+      } = await supa
         .from('transactions')
         .insert({
-          telegram_id: telegramId,
+          telegram_id: tgUser.id,
           type: 'daily_combo',
           amount: reward,
+          reference_id: today,
           metadata: {
-            combo_date: today,
-            cards: requiredCards
+            cards: ids
           }
         });
 
+      if (transactionErr) {
+        throw transactionErr;
+      }
+
       return out({
-        ok: true,
-        claimed: true,
+        user: updated,
+
         reward,
-        user: updated
+
+        combo: {
+          ...combo,
+          cards: chosen,
+          complete: true,
+          claimed: true
+        }
       });
     }
 
-    throw new Error(
-      'Unknown Daily Combo action.'
-    );
+    // Normal Daily Combo request
+    return out({
+      combo: {
+        ...combo,
+        cards: chosen,
+        complete,
+        claimed
+      }
+    });
 
-  } catch (error) {
-    console.error(error);
-
-    return fail(
-      error,
-      400
-    );
+  } catch (e) {
+    return fail(e);
   }
 });
