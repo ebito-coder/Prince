@@ -17,8 +17,8 @@ export const cors = {
 export const adminId = '6457637080';
 
 /* =========================================================
-   SUPABASE DATABASE CLIENT
-   ========================================================= */
+    SUPABASE DATABASE CLIENT WITH QUERY TIMEOUT
+    ========================================================= */
 
 export const db = () => {
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -43,14 +43,41 @@ export const db = () => {
     auth: {
       autoRefreshToken: false,
       persistSession: false
+    },
+    db: {
+      schema: 'public'
     }
   });
 };
 
 /* =========================================================
-   HMAC SHA-256
-   Used for Telegram Web App initData verification
-   ========================================================= */
+    QUERY TIMEOUT WRAPPER
+    Ensures Supabase queries don't hang indefinitely
+    ========================================================= */
+
+export async function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number = 5000
+): Promise<T> {
+  const timeoutPromise = new Promise<T>((_, reject) =>
+    setTimeout(
+      () =>
+        reject(
+          new Error(
+            `Query timed out after ${timeoutMs}ms. Database may be unavailable.`
+          )
+        ),
+      timeoutMs
+    )
+  );
+
+  return Promise.race([promise, timeoutPromise]);
+}
+
+/* =========================================================
+    HMAC SHA-256
+    Used for Telegram Web App initData verification
+    ========================================================= */
 
 async function hmac(
   key: Uint8Array | string,
@@ -80,8 +107,8 @@ async function hmac(
 }
 
 /* =========================================================
-   ARRAY BUFFER → HEX
-   ========================================================= */
+    ARRAY BUFFER → HEX
+    ========================================================= */
 
 function hex(buffer: ArrayBuffer): string {
   return Array.from(new Uint8Array(buffer))
@@ -90,8 +117,8 @@ function hex(buffer: ArrayBuffer): string {
 }
 
 /* =========================================================
-   VERIFY TELEGRAM MINI APP INIT DATA
-   ========================================================= */
+    VERIFY TELEGRAM MINI APP INIT DATA
+    ========================================================= */
 
 export async function verifyTelegram(initData: string) {
   if (!initData) {
@@ -225,8 +252,8 @@ export async function verifyTelegram(initData: string) {
 }
 
 /* =========================================================
-   STANDARD SUCCESS RESPONSE
-   ========================================================= */
+    STANDARD SUCCESS RESPONSE
+    ========================================================= */
 
 export function out(
   body: unknown,
@@ -245,8 +272,8 @@ export function out(
 }
 
 /* =========================================================
-   STANDARD ERROR RESPONSE
-   ========================================================= */
+    STANDARD ERROR RESPONSE
+    ========================================================= */
 
 export function fail(
   error: unknown,
@@ -286,4 +313,4 @@ export function fail(
       }
     }
   );
-  }
+}

@@ -1,10 +1,10 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import {
   cors,
   db,
   fail,
   out,
-  verifyTelegram
+  verifyTelegram,
+  withTimeout
 } from '../_shared.ts';
 
 Deno.serve(async (req) => {
@@ -32,15 +32,29 @@ Deno.serve(async (req) => {
     const referralCode =
       `EBITO${telegramId}`;
 
-    const { data: existing, error: findError } =
-      await supabase
-        .from('users')
-        .select('*')
-        .eq('telegram_id', telegramId)
-        .maybeSingle();
-
-    if (findError) {
-      throw findError;
+    // Query existing user with timeout
+    let existing;
+    try {
+      const result = await withTimeout(
+        supabase
+          .from('users')
+          .select('*')
+          .eq('telegram_id', telegramId)
+          .maybeSingle(),
+        5000
+      );
+      
+      if (result.error) {
+        throw result.error;
+      }
+      
+      existing = result.data;
+    } catch (err) {
+      throw new Error(
+        `Failed to look up user account: ${
+          err instanceof Error ? err.message : String(err)
+        }`
+      );
     }
 
     let user = existing;
@@ -48,85 +62,135 @@ Deno.serve(async (req) => {
     if (!user) {
       let referredBy: number | null = null;
 
+      // Look up referrer if referral code provided
       if (
         startParam &&
         startParam.startsWith('ref_')
       ) {
-        const code =
-          startParam.substring(4);
+        try {
+          const code =
+            startParam.substring(4);
 
-        const { data: referrer } =
-          await supabase
-            .from('users')
-            .select('telegram_id')
-            .eq('referral_code', code)
-            .maybeSingle();
+          const referrerResult = await withTimeout(
+            supabase
+              .from('users')
+              .select('telegram_id')
+              .eq('referral_code', code)
+              .maybeSingle(),
+            3000
+          );
 
-        if (
-          referrer &&
-          Number(referrer.telegram_id) !== telegramId
-        ) {
-          referredBy =
-            Number(referrer.telegram_id);
+          if (
+            !referrerResult.error &&
+            referrerResult.data &&
+            Number(referrerResult.data.telegram_id) !== telegramId
+          ) {
+            referredBy =
+              Number(referrerResult.data.telegram_id);
+          }
+        } catch (err) {
+          // Log referral lookup failure but don't block signup
+          console.warn(
+            'Referral lookup failed:',
+            err instanceof Error ? err.message : String(err)
+          );
         }
       }
 
-      const { data: created, error: createError } =
-        await supabase
-          .from('users')
-          .insert({
-            telegram_id: telegramId,
-            username: tgUser.username || null,
-            first_name: tgUser.first_name || null,
-            last_name: tgUser.last_name || null,
-            photo_url: tgUser.photo_url || null,
-            coins: 0,
-            energy: 1000,
-            max_energy: 1000,
-            level: 1,
-            referral_code: referralCode,
-            referred_by: referredBy,
-            total_taps: 0,
-            airdrop_points: 0,
-            tap_power: 1,
-            profit_hour: 0
-          })
-          .select('*')
-          .single();
+      // Create new user with timeout
+      try {
+        const createResult = await withTimeout(
+          supabase
+            .from('users')
+            .insert({
+              telegram_id: telegramId,
+              username: tgUser.username || null,
+              first_name: tgUser.first_name || null,
+              last_name: tgUser.last_name || null,
+              photo_url: tgUser.photo_url || null,
+              coins: 0,
+              energy: 1000,
+              max_energy: 1000,
+              level: 1,
+              referral_code: referralCode,
+              referred_by: referredBy,
+              total_taps: 0,
+              airdrop_points: 0,
+              tap_power: 1,
+              profit_hour: 0
+            })
+            .select('*')
+            .single(),
+          5000
+        );
 
-      if (createError) {
-        throw createError;
+        if (createResult.error) {
+          throw createResult.error;
+        }
+
+        user = createResult.data;
+      } catch (err) {
+        throw new Error(
+          `Failed to create user account: ${
+            err instanceof Error ? err.message : String(err)
+          }`
+        );
       }
 
-      user = created;
-
+      // Insert referral record if applicable (non-blocking)
       if (referredBy) {
-        await supabase
-          .from('referrals')
-          .insert({
-            referrer_id: referredBy,
-            referred_id: telegramId,
-            reward: 0
-          });
+        try {
+          await withTimeout(
+            supabase
+              .from('referrals')
+              .insert({
+                referrer_id: referredBy,
+                referred_id: telegramId,
+                reward: 0
+              }),
+            2000
+          );
+        } catch (err) {
+          // Log but don't fail auth if referral insert fails
+          console.warn(
+            'Failed to record referral:',
+            err instanceof Error ? err.message : String(err)
+          );
+        }
       }
     } else {
-      const { data: updated, error: updateError } =
-        await supabase
-          .from('users')
-          .update({
-            username: tgUser.username || null,
-            first_name: tgUser.first_name || null,
-            last_name: tgUser.last_name || null,
-            photo_url: tgUser.photo_url || null,
-            updated_at: new Date().toISOString()
-          })
-          .eq('telegram_id', telegramId)
-          .select('*')
-          .single();
+      // Update existing user with timeout
+      try {
+        const updateResult = await withTimeout(
+          supabase
+            .from('users')
+            .update({
+              username: tgUser.username || null,
+              first_name: tgUser.first_name || null,
+              last_name: tgUser.last_name || null,
+              photo_url: tgUser.photo_url || null,
+              updated_at: new Date().toISOString()
+            })
+            .eq('telegram_id', telegramId)
+            .select('*')
+            .single(),
+          5000
+        );
 
-      if (!updateError && updated) {
-        user = updated;
+        if (!updateResult.error && updateResult.data) {
+          user = updateResult.data;
+        }
+      } catch (err) {
+        // Log but continue with existing user data if update fails
+        console.warn(
+          'Failed to update user profile:',
+          err instanceof Error ? err.message : String(err)
+        );
       }
+    }
+
+    if (!user) {
+      throw new Error('Failed to load or create user account.');
     }
 
     return out({
@@ -139,7 +203,7 @@ Deno.serve(async (req) => {
       }
     });
   } catch (error) {
-    console.error(error);
+    console.error('telegram-auth error:', error);
 
     return fail(
       error,
