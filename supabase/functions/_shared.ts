@@ -1,25 +1,69 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+/* =========================================================
+   EBiTO COIN — SHARED SUPABASE EDGE FUNCTION HELPERS
+   ========================================================= */
+
+// CORS
 export const cors = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
+  'Access-Control-Allow-Headers':
+    'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods':
+    'POST, GET, OPTIONS'
 };
 
+// Admin Telegram ID
 export const adminId = '6457637080';
 
-export const db = () => createClient(
-  Deno.env.get('SUPABASE_URL')!,
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-);
+/* =========================================================
+   SUPABASE DATABASE CLIENT
+   ========================================================= */
 
-async function hmac(key: Uint8Array | string, data: string) {
-  const raw = typeof key === 'string'
-    ? new TextEncoder().encode(key)
-    : key;
+export const db = () => {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
 
-  const k = await crypto.subtle.importKey(
+  // Newer Supabase projects may expose the newer secret key.
+  // Keep the old service-role key as a fallback.
+  const serviceKey =
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ||
+    Deno.env.get('SUPABASE_SECRET_KEY');
+
+  if (!supabaseUrl) {
+    throw new Error('SUPABASE_URL is not configured.');
+  }
+
+  if (!serviceKey) {
+    throw new Error(
+      'Supabase server secret key is not configured.'
+    );
+  }
+
+  return createClient(supabaseUrl, serviceKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  });
+};
+
+/* =========================================================
+   HMAC SHA-256
+   Used for Telegram Web App initData verification
+   ========================================================= */
+
+async function hmac(
+  key: Uint8Array | string,
+  data: string
+): Promise<ArrayBuffer> {
+  const keyBytes =
+    typeof key === 'string'
+      ? new TextEncoder().encode(key)
+      : key;
+
+  const cryptoKey = await crypto.subtle.importKey(
     'raw',
-    raw,
+    keyBytes,
     {
       name: 'HMAC',
       hash: 'SHA-256'
@@ -28,19 +72,26 @@ async function hmac(key: Uint8Array | string, data: string) {
     ['sign']
   );
 
-  return new Uint8Array(
-    await crypto.subtle.sign(
-      'HMAC',
-      k,
-      new TextEncoder().encode(data)
-    )
+  return await crypto.subtle.sign(
+    'HMAC',
+    cryptoKey,
+    new TextEncoder().encode(data)
   );
 }
 
-const hex = (a: Uint8Array) =>
-  [...a]
-    .map(x => x.toString(16).padStart(2, '0'))
+/* =========================================================
+   ARRAY BUFFER → HEX
+   ========================================================= */
+
+function hex(buffer: ArrayBuffer): string {
+  return Array.from(new Uint8Array(buffer))
+    .map((b) => b.toString(16).padStart(2, '0'))
     .join('');
+}
+
+/* =========================================================
+   VERIFY TELEGRAM MINI APP INIT DATA
+   ========================================================= */
 
 export async function verifyTelegram(initData: string) {
   if (!initData) {
@@ -49,77 +100,133 @@ export async function verifyTelegram(initData: string) {
     );
   }
 
-  const token = Deno.env.get('TELEGRAM_BOT_TOKEN');
+  const botToken = Deno.env.get('TELEGRAM_BOT_TOKEN');
 
-  if (!token) {
+  if (!botToken) {
     throw new Error(
       'Telegram server secret is not configured.'
     );
   }
 
-  const p = new URLSearchParams(initData);
+  const params = new URLSearchParams(initData);
 
-  const hash = p.get('hash');
+  const receivedHash = params.get('hash');
 
-  if (!hash) {
-    throw new Error(
-      'Telegram hash is missing.'
-    );
+  if (!receivedHash) {
+    throw new Error('Telegram hash is missing.');
   }
 
-  p.delete('hash');
+  // Remove hash before creating Telegram's data-check-string.
+  params.delete('hash');
 
-  const dataCheck = [...p.entries()]
+  const dataCheckString = [...params.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([k, v]) => `${k}=${v}`)
+    .map(([key, value]) => `${key}=${value}`)
     .join('\n');
 
-  const secret = await hmac(
+  /*
+    Telegram verification:
+
+    secret_key = HMAC_SHA256(
+      key = "WebAppData",
+      data = bot_token
+    )
+
+    calculated_hash = HMAC_SHA256(
+      key = secret_key,
+      data = data_check_string
+    )
+  */
+
+  const secretKey = await hmac(
     'WebAppData',
-    token
+    botToken
   );
 
-  const calculated = hex(
+  const calculatedHash = hex(
     await hmac(
-      secret,
-      dataCheck
+      new Uint8Array(secretKey),
+      dataCheckString
     )
   );
 
-  if (calculated !== hash) {
+  if (calculatedHash !== receivedHash) {
     throw new Error(
       'Invalid Telegram initData.'
     );
   }
 
+  /* =======================================================
+     CHECK TELEGRAM SESSION AGE
+     ======================================================= */
+
   const authDate = Number(
-    p.get('auth_date') || 0
+    params.get('auth_date') || 0
   );
 
-  if (
-    !authDate ||
-    Math.floor(Date.now() / 1000) - authDate > 86400
-  ) {
+  if (!authDate) {
+    throw new Error(
+      'Telegram auth_date is missing.'
+    );
+  }
+
+  const currentTime =
+    Math.floor(Date.now() / 1000);
+
+  const sessionAge =
+    currentTime - authDate;
+
+  // 24-hour validity
+  if (sessionAge > 86400) {
     throw new Error(
       'Telegram session has expired. Reopen the Mini App.'
     );
   }
 
-  const user = JSON.parse(
-    p.get('user') || '{}'
-  );
+  /* =======================================================
+     READ TELEGRAM USER
+     ======================================================= */
 
-  if (!user.id) {
+  const userString = params.get('user');
+
+  if (!userString) {
     throw new Error(
       'Telegram user data is missing.'
     );
   }
 
+  let user: any;
+
+  try {
+    user = JSON.parse(userString);
+  } catch {
+    throw new Error(
+      'Telegram user data is invalid.'
+    );
+  }
+
+  if (!user?.id) {
+    throw new Error(
+      'Telegram user ID is missing.'
+    );
+  }
+
+  /* =======================================================
+     REFERRAL START PARAMETER
+     ======================================================= */
+
+  const startParam =
+    params.get('start_param') || '';
+
   return {
     user,
-    startParam: p.get('start_param') || ''
+    startParam
   };
 }
+
+/* =========================================================
+   STANDARD SUCCESS RESPONSE
+   ========================================================= */
 
 export function out(
   body: unknown,
@@ -137,17 +244,46 @@ export function out(
   );
 }
 
+/* =========================================================
+   STANDARD ERROR RESPONSE
+   ========================================================= */
+
 export function fail(
-  e: unknown,
+  error: unknown,
   status = 400
 ) {
-  return out(
+  let message = 'Unknown error';
+
+  if (error instanceof Error) {
+    message = error.message;
+  } else if (
+    typeof error === 'string'
+  ) {
+    message = error;
+  } else {
+    try {
+      message = JSON.stringify(error);
+    } catch {
+      message = 'Unknown error';
+    }
+  }
+
+  console.error(
+    'EBiTO Edge Function Error:',
+    message
+  );
+
+  return new Response(
+    JSON.stringify({
+      ok: false,
+      error: message
+    }),
     {
-      error:
-        e instanceof Error
-          ? e.message
-          : String(e)
-    },
-    status
+      status,
+      headers: {
+        ...cors,
+        'Content-Type': 'application/json'
+      }
+    }
   );
   }
