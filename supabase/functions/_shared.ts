@@ -17,25 +17,28 @@ export const cors = {
 export const adminId = '6457637080';
 
 /* =========================================================
-    SUPABASE DATABASE CLIENT WITH QUERY TIMEOUT
+    SUPABASE DATABASE CLIENT
+    CRITICAL: Uses service-role key from Edge Function env
+    This key is NEVER exposed to frontend.
     ========================================================= */
 
 export const db = () => {
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
 
-  // Newer Supabase projects may expose the newer secret key.
-  // Keep the old service-role key as a fallback.
+  // Service-role key from Edge Function environment
+  // In Supabase dashboard: Settings > Edge Functions > Secrets
+  // Add: SUPABASE_SERVICE_ROLE_KEY = your-service-role-key
   const serviceKey =
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ||
     Deno.env.get('SUPABASE_SECRET_KEY');
 
   if (!supabaseUrl) {
-    throw new Error('SUPABASE_URL is not configured.');
+    throw new Error('Missing environment: SUPABASE_URL');
   }
 
   if (!serviceKey) {
     throw new Error(
-      'Supabase server secret key is not configured.'
+      'Missing environment: SUPABASE_SERVICE_ROLE_KEY or SUPABASE_SECRET_KEY. Check Supabase Edge Function secrets.'
     );
   }
 
@@ -43,35 +46,42 @@ export const db = () => {
     auth: {
       autoRefreshToken: false,
       persistSession: false
-    },
-    db: {
-      schema: 'public'
     }
   });
 };
 
 /* =========================================================
-    QUERY TIMEOUT WRAPPER
-    Ensures Supabase queries don't hang indefinitely
+    SAFE TIMEOUT WRAPPER FOR QUERIES
+    Prevents queries from hanging indefinitely
     ========================================================= */
 
 export async function withTimeout<T>(
+  operationName: string,
   promise: Promise<T>,
-  timeoutMs: number = 5000
+  timeoutMs: number = 4000
 ): Promise<T> {
-  const timeoutPromise = new Promise<T>((_, reject) =>
-    setTimeout(
+  let timeoutHandle: number | null = null;
+
+  const timeoutPromise = new Promise<T>((_, reject) => {
+    timeoutHandle = setTimeout(
       () =>
         reject(
           new Error(
-            `Query timed out after ${timeoutMs}ms. Database may be unavailable.`
+            `[TIMEOUT ${timeoutMs}ms] ${operationName}`
           )
         ),
       timeoutMs
-    )
-  );
+    );
+  });
 
-  return Promise.race([promise, timeoutPromise]);
+  try {
+    const result = await Promise.race([promise, timeoutPromise]);
+    if (timeoutHandle !== null) clearTimeout(timeoutHandle);
+    return result;
+  } catch (error) {
+    if (timeoutHandle !== null) clearTimeout(timeoutHandle);
+    throw error;
+  }
 }
 
 /* =========================================================
@@ -131,7 +141,7 @@ export async function verifyTelegram(initData: string) {
 
   if (!botToken) {
     throw new Error(
-      'Telegram server secret is not configured.'
+      'Missing environment: TELEGRAM_BOT_TOKEN. Check Supabase Edge Function secrets.'
     );
   }
 
@@ -140,7 +150,7 @@ export async function verifyTelegram(initData: string) {
   const receivedHash = params.get('hash');
 
   if (!receivedHash) {
-    throw new Error('Telegram hash is missing.');
+    throw new Error('Telegram hash is missing from initData.');
   }
 
   // Remove hash before creating Telegram's data-check-string.
@@ -179,7 +189,7 @@ export async function verifyTelegram(initData: string) {
 
   if (calculatedHash !== receivedHash) {
     throw new Error(
-      'Invalid Telegram initData.'
+      'Invalid Telegram initData signature.'
     );
   }
 
@@ -193,7 +203,7 @@ export async function verifyTelegram(initData: string) {
 
   if (!authDate) {
     throw new Error(
-      'Telegram auth_date is missing.'
+      'Telegram auth_date is missing from initData.'
     );
   }
 
@@ -206,7 +216,7 @@ export async function verifyTelegram(initData: string) {
   // 24-hour validity
   if (sessionAge > 86400) {
     throw new Error(
-      'Telegram session has expired. Reopen the Mini App.'
+      'Telegram session expired (>24 hours).'
     );
   }
 
@@ -218,7 +228,7 @@ export async function verifyTelegram(initData: string) {
 
   if (!userString) {
     throw new Error(
-      'Telegram user data is missing.'
+      'Telegram user data is missing from initData.'
     );
   }
 
@@ -228,7 +238,7 @@ export async function verifyTelegram(initData: string) {
     user = JSON.parse(userString);
   } catch {
     throw new Error(
-      'Telegram user data is invalid.'
+      'Telegram user data is not valid JSON.'
     );
   }
 
@@ -272,7 +282,7 @@ export function out(
 }
 
 /* =========================================================
-    STANDARD ERROR RESPONSE
+    STANDARD ERROR RESPONSE (Always returns JSON)
     ========================================================= */
 
 export function fail(
@@ -283,23 +293,19 @@ export function fail(
 
   if (error instanceof Error) {
     message = error.message;
-  } else if (
-    typeof error === 'string'
-  ) {
+  } else if (typeof error === 'string') {
     message = error;
   } else {
     try {
       message = JSON.stringify(error);
     } catch {
-      message = 'Unknown error';
+      message = 'Unserializable error';
     }
   }
 
-  console.error(
-    'EBiTO Edge Function Error:',
-    message
-  );
+  console.error('[EBiTO Error]', message);
 
+  // Always return valid JSON response
   return new Response(
     JSON.stringify({
       ok: false,
