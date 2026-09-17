@@ -5,8 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <meta name="theme-color" content="#06110c">
   <title>EBiTO Coin</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
       --bg: #06110c;
@@ -17,58 +15,69 @@
       --muted: #8ea99a;
       --green: #2fe38a;
       --gold: #ffd84a;
-      --gold-2: #ffb347;
       --red: #ff6a6a;
       --primary: #38d39f;
-      --shadow: rgba(0,0,0,.35);
     }
-
     * { box-sizing: border-box; }
-    html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: system-ui, Arial, sans-serif; }
+    html, body {
+      margin: 0; padding: 0; background: var(--bg); color: var(--text);
+      font-family: system-ui, Arial, sans-serif;
+    }
     body { min-height: 100vh; }
-    .app { max-width: 560px; margin: 0 auto; padding-bottom: 88px; }
-    .head { position: sticky; top: 0; z-index: 10; background: rgba(6,17,12,.92); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
+    .app { max-width: 560px; margin: 0 auto; padding-bottom: 100px; }
+    .head {
+      position: sticky; top: 0; z-index: 10;
+      background: rgba(6,17,12,.94); backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+    }
     .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-    .logo { font-weight: 900; font-size: 20px; letter-spacing: .04em; padding: 16px 18px; }
+    .logo { padding: 18px; font-size: 20px; font-weight: 900; }
     .status { font-size: 10px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 99px; color: var(--gold); background: rgba(255,216,74,.08); }
     .section { padding: 16px 18px 0; }
-    .section h2 { margin: 0; font-size: 18px; }
-    .section small { color: var(--muted); }
     .view { display: none; }
     .view.active { display: block; }
-    .balance, .box, .card, .notice { background: var(--panel); border: 1px solid var(--line); border-radius: 22px; padding: 16px; margin-top: 12px; box-shadow: 0 20px 25px rgba(0,0,0,.18); }
+    .box, .card, .balance { background: var(--panel); border: 1px solid var(--line); border-radius: 22px; padding: 16px; margin-top: 12px; }
+    .balance { background: var(--panel); }
     .label { color: var(--muted); font-size: 11px; letter-spacing: .14em; }
     .coins { font-size: 42px; font-weight: 900; margin: 8px 0; }
     .gold { color: var(--gold); }
-    .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
-    .stat { background: rgba(255,255,255,.04); border: 1px solid var(--line); border-radius: 14px; padding: 10px 8px; text-align: center; }
+    .stats { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; margin-top: 12px; }
+    .stat { text-align: center; background: rgba(255,255,255,.04); border: 1px solid var(--line); border-radius: 14px; padding: 10px 8px; }
     .stat small { display: block; color: var(--muted); }
     .stat b { display: block; margin-top: 4px; }
-    .coin { width: 180px; height: 180px; margin: 8px auto 0; display: grid; place-items: center; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff3ae, #ffd84a 35%, #b78200 100%); color: #1b1303; font-size: 60px; font-weight: 900; user-select: none; touch-action: none; }
     .energy { height: 12px; background: rgba(255,255,255,.05); border-radius: 999px; overflow: hidden; }
-    .energy .fill { display: block; height: 100%; width: 100%; background: linear-gradient(90deg, var(--primary), var(--green)); }
-    .quick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
-    button { border: 1px solid var(--line); background: var(--panel-2); color: var(--text); border-radius: 12px; padding: 12px 10px; font-weight: 700; cursor: pointer; }
-    button.primary, .goldbtn { background: linear-gradient(180deg, #ffd84a, #dd9d00); color: #1b1303; border: none; }
+    .energy .fill { display: block; height: 100%; background: linear-gradient(90deg, var(--primary), var(--green)); }
+    .coin { width: 180px; height: 180px; margin: 8px auto 0; display: grid; place-items: center; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff3ae, #ffd84a 35%, #b78200 100%); color: #1b1303; font-size: 60px; font-weight: 900; user-select: none; touch-action: none; }
+    .quick { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; margin-top: 12px; }
+    button {
+      border: 1px solid var(--line); background: var(--panel-2); color: var(--text);
+      border-radius: 12px; padding: 12px 10px; font-weight: 700; cursor: pointer;
+    }
+    button.primary, .goldbtn {
+      background: linear-gradient(180deg, #ffd84a, #dd9d00); color: #1b1303; border: none;
+    }
     button[disabled] { opacity: .5; cursor: not-allowed; }
-    .muted { color: var(--muted); }
-    .box .row { margin-top: 10px; }
-    .cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 12px; }
-    .card { padding: 14px; }
+    .cards { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; margin-top: 12px; }
     .card h3 { margin: 0; font-size: 16px; }
     .card p { margin: 8px 0 12px; color: var(--muted); line-height: 1.5; font-size: 13px; }
-    .card .row { margin-top: 0; }
+    .card .row, .box .row { margin-top: 8px; }
     .filters { display: flex; gap: 8px; overflow: auto; margin-top: 12px; }
-    .filter { padding: 8px 12px; background: rgba(255,255,255,.04); border: 1px solid var(--line); border-radius: 999px; white-space: nowrap; }
+    .filter { padding: 8px 12px; border-radius: 999px; background: rgba(255,255,255,.04); border: 1px solid var(--line); white-space: nowrap; }
     .filter.active { color: var(--gold); border-color: rgba(255,216,74,.35); }
-    .nav { position: fixed; left: 50%; bottom: 12px; transform: translateX(-50%); width: min(560px, calc(100% - 18px)); display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; background: rgba(11,28,19,.8); border: 1px solid var(--line); border-radius: 18px; padding: 8px; backdrop-filter: blur(8px); }
-    .nav button { background: transparent; border: none; padding: 10px 6px; border-radius: 12px; font-size: 12px; }
+    .nav {
+      position: fixed; left: 50%; bottom: 12px; transform: translateX(-50%);
+      width: min(560px, calc(100% - 18px)); display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 6px;
+      background: rgba(11,28,19,.8); border: 1px solid var(--line); border-radius: 18px; padding: 8px; backdrop-filter: blur(8px);
+    }
+    .nav button { background: transparent; border: none; font-size: 12px; }
     .nav button.active { background: rgba(255,255,255,.04); color: var(--gold); }
-    .toast { position: fixed; left: 50%; bottom: 110px; transform: translateX(-50%) translateY(20px); background: #17301f; border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; opacity: 0; transition: opacity .2s ease, transform .2s ease; z-index: 20; }
+    .toast {
+      position: fixed; left: 50%; bottom: 110px; transform: translateX(-50%) translateY(20px);
+      background: #17301f; border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; opacity: 0;
+      transition: opacity .2s ease, transform .2s ease; z-index: 30;
+    }
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-    #game { text-align: center; }
-    #game .tap-button { width: 170px; height: 170px; border-radius: 50%; margin: 12px auto; font-size: 28px; }
-    #game .score-box { font-size: 36px; font-weight: 900; color: var(--gold); }
+    .muted { color: var(--muted); }
     .hidden { display: none !important; }
     @media (max-width: 420px) {
       .cards { grid-template-columns: 1fr; }
@@ -81,18 +90,8 @@
   <div class="app">
     <header class="head row">
       <div class="logo">EBiTO Coin</div>
-      <div id="status" class="status">CONNECTING</div>
+      <div id="status" class="status">READY</div>
     </header>
-
-    <div id="diagnostic" style="position:fixed;inset:0;background:#06110c;color:#f2fff7;z-index:9999;display:none;padding:18px;font-family:system-ui,Arial;overflow:auto;">
-      <div style="max-width:560px;margin:auto;">
-        <h2 style="margin:0 0 8px;">🛠️ EBiTO Connection Diagnostic</h2>
-        <p style="color:#8ea99a;margin-top:0;">This screen shows exactly where startup is failing.</p>
-        <div id="diagStatus" style="background:#0b1c13;border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:14px;white-space:pre-wrap;line-height:1.6;">Starting diagnostic…</div>
-        <button onclick="location.reload()" style="margin-top:12px;width:100%;padding:13px;">RETRY</button>
-        <button onclick="document.getElementById('diagnostic').style.display='none'" style="margin-top:8px;width:100%;padding:13px;">CLOSE DIAGNOSTIC</button>
-      </div>
-    </div>
 
     <main>
       <section id="home" class="view active">
@@ -107,15 +106,17 @@
               <div class="stat"><small>Airdrop</small><b id="airdrop">0</b></div>
             </div>
           </div>
+
           <div class="box">
             <div class="row"><small>ENERGY</small><small id="energyText">1000 / 1000</small></div>
-            <div class="energy" aria-label="Energy"><span id="fill" class="fill" style="width:100%"></span></div>
+            <div class="energy"><span id="fill" class="fill" style="width:100%"></span></div>
             <div class="quick">
               <button onclick="nav('mine')">Mine</button>
               <button onclick="nav('earn')">Earn</button>
               <button onclick="nav('friends')">Invite</button>
             </div>
           </div>
+
           <div class="box" style="margin-top:16px;">
             <h2>⚡ Daily Combo</h2>
             <small>3 cards daily</small>
@@ -148,7 +149,7 @@
         <div class="section">
           <div class="box">
             <h2>🎁 Earn</h2>
-            <small>Complete active EBiTO missions to earn EBC and airdrop points.</small>
+            <small>Complete missions to earn EBC and airdrop points.</small>
             <div id="tasks" class="cards" style="margin-top:12px;"></div>
           </div>
         </div>
@@ -159,7 +160,7 @@
           <div class="box">
             <b>Your referral link</b>
             <div class="row" style="margin-top:10px;">
-              <small id="refLink">Loading…</small>
+              <small id="refLink">Unavailable</small>
               <button onclick="copyRef()">COPY</button>
             </div>
           </div>
@@ -173,14 +174,14 @@
 
       <section id="games" class="view">
         <div class="section">
-          <div class="card" id="game">
+          <div class="card" style="text-align:center;">
             <h3>⚡ Speed Tap</h3>
             <p>Tap as fast as possible for 30 seconds.</p>
             <button class="primary" onclick="startGame()">PLAY</button>
-            <div id="gameBox" class="hidden" style="text-align:center;margin-top:12px;">
-              <div id="timer" class="score-box">30</div>
+            <div id="gameBox" class="hidden" style="margin-top:12px;">
+              <div id="timer" style="font-size:36px;font-weight:900;color:var(--gold);">30</div>
               <div><span id="score">0</span> taps</div>
-              <button class="tap-button primary" onclick="gameTap()">TAP</button>
+              <button class="primary" onclick="gameTap()" style="width:170px;height:170px;border-radius:50%;font-size:28px;margin-top:12px;">TAP</button>
             </div>
           </div>
         </div>
@@ -199,15 +200,12 @@
       <section id="profile" class="view">
         <div class="section">
           <div class="box">
-            <div class="row">
-              <b id="name">EBiTO Player</b>
-              <span id="avatar">E</span>
-            </div>
+            <div class="row"><b id="name">EBiTO Player</b><span id="avatar">E</span></div>
           </div>
           <div class="box">
             <div class="row"><span>Level</span><b id="level">1</b></div>
             <div class="row"><span>Total taps</span><b id="taps">0</b></div>
-            <div class="row"><span>Telegram ID</span><b id="tid">—</b></div>
+            <div class="row"><span>Player ID</span><b id="pid">LOCAL</b></div>
           </div>
         </div>
       </section>
@@ -225,51 +223,87 @@
   <div id="toast" class="toast" aria-live="polite"></div>
 
   <script>
-    (() => {
-      const box = document.getElementById('diagnostic');
-      const out = document.getElementById('diagStatus');
-      const lines = [];
-      function d(msg) {
-        lines.push((new Date()).toLocaleTimeString() + '  ' + msg);
-        if (out) out.textContent = lines.join('\n');
-        console.log('[EBiTO]', msg);
-      }
-      window.EBiTODiagnostic = {
-        show(msg) { if (box) box.style.display = 'block'; d(msg); },
-        ok(msg) { d('✅ ' + msg); },
-        fail(msg) { d('❌ ' + msg); if (box) box.style.display = 'block'; }
-      };
-      window.addEventListener('error', (e) => {
-        if (window.EBiTODiagnostic) window.EBiTODiagnostic.fail('JavaScript error: ' + (e.message || 'Unknown error'));
-      });
-      window.addEventListener('unhandledrejection', (e) => {
-        const r = e && e.reason ? e.reason : e;
-        window.EBiTODiagnostic.fail('Unhandled promise error: ' + (r && r.message ? r.message : String(r)));
-      });
-      d('Page JavaScript started.');
-      d('Telegram library: ' + (window.Telegram && window.Telegram.WebApp ? 'FOUND' : 'NOT FOUND'));
-      d('Supabase library: ' + (window.supabase && typeof window.supabase.createClient === 'function' ? 'FOUND' : 'NOT FOUND'));
-    })();
-  </script>
-
-  <script>
-    const SUPABASE_URL = 'https://tdkrogqygwqmocntnjba.supabase.co';
-    const SUPABASE_KEY = 'sb_publishable_o6IgAiYRQ5h1jdjE3ODpog_-HzJF4B';
-    const ADMIN_ID = '6457637080';
-    const app = {
-      tg: window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null,
-      db: null,
-      user: null,
-      cards: [],
-      tasks: [],
-      combo: null,
-      leaders: [],
-      demoMode: false,
-      game: { running: false, score: 0, start: 0, timer: null }
+    const STORAGE_KEY = 'ebito-local-save-v1';
+    const DEFAULT_STATE = {
+      player: {
+        name: 'EBiTO Player',
+        coins: 0,
+        tapPower: 1,
+        profitHour: 0,
+        airdrop: 0,
+        energy: 1000,
+        maxEnergy: 1000,
+        totalTaps: 0,
+        level: 1,
+        referralCode: 'EBITOLOCAL',
+        friends: 0,
+        referralEarnings: 0,
+        lastDaily: '',
+        dailyComboClaimed: false
+      },
+      cards: [
+        { id: 1, name: 'Starter Drill', category: 'General', cost: 50, tap_bonus: 1, description: 'Basic mining power.' },
+        { id: 2, name: 'Copper Crew', category: 'General', cost: 180, tap_bonus: 3, description: 'Adds more mining output.' },
+        { id: 3, name: 'Iron Cart', category: 'General', cost: 420, tap_bonus: 6, description: 'Stronger support for the mine.' },
+        { id: 4, name: 'Gold Engine', category: 'Rare', cost: 1000, tap_bonus: 12, description: 'Powerful automation system.' }
+      ],
+      owned: {},
+      tasks: [
+        { id: 1, title: 'First Tap', reward: 25, description: 'Tap the coin once.', active: true },
+        { id: 2, title: 'Mine Starter', reward: 80, description: 'Earn 100 total coins.', active: true },
+        { id: 3, title: 'Daily Hustle', reward: 200, description: 'Reach 500 coins.', active: true }
+      ],
+      taskProgress: {},
+      combo: {
+        cards: [1, 2, 3],
+        complete: false,
+        claimed: false
+      },
+      leaderboard: []
     };
+
+    const state = loadState();
+    const app = {
+      gameRunning: false,
+      gameScore: 0,
+      gameStart: 0,
+      gameTimer: null
+    };
+
+    function loadState() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+        if (!saved) return structuredClone(DEFAULT_STATE);
+        return {
+          ...structuredClone(DEFAULT_STATE),
+          ...saved,
+          player: { ...DEFAULT_STATE.player, ...(saved.player || {}) },
+          cards: saved.cards || DEFAULT_STATE.cards,
+          tasks: saved.tasks || DEFAULT_STATE.tasks,
+          owned: saved.owned || {},
+          taskProgress: saved.taskProgress || {},
+          combo: { ...DEFAULT_STATE.combo, ...(saved.combo || {}) },
+          leaderboard: saved.leaderboard || []
+        };
+      } catch {
+        return structuredClone(DEFAULT_STATE);
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function numberFormat(value) {
+      const num = Number(value || 0);
+      if (num >= 1000000) return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+      if (num >= 1000) return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+      return String(num);
+    }
 
     function toast(msg) {
       const t = document.getElementById('toast');
+      if (!t) return;
       t.textContent = msg;
       t.classList.add('show');
       clearTimeout(toast._timer);
@@ -281,347 +315,222 @@
       document.querySelectorAll('.nav button').forEach((b) => b.classList.toggle('active', b.dataset.p === page));
     }
 
-    function numberFormat(value) {
-      const num = Number(value || 0);
-      if (num >= 1000000) return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
-      if (num >= 1000) return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
-      return String(num);
-    }
-
-    function setStatus(text) {
-      const el = document.getElementById('status');
-      if (el) el.textContent = text;
-    }
-
-    function renderUser() {
-      const u = app.user || {};
-      const name = [u.first_name, u.last_name].filter(Boolean).join(' ') || 'EBiTO Player';
-      document.getElementById('name').textContent = name;
-      document.getElementById('avatar').textContent = (name || 'E').charAt(0).toUpperCase();
-      document.getElementById('coins').textContent = numberFormat(u.coins || 0);
-      document.getElementById('profit').textContent = '+' + numberFormat(u.profit_hour || 0);
-      document.getElementById('power').textContent = '+' + numberFormat(u.tap_power || 1);
-      document.getElementById('airdrop').textContent = numberFormat(u.airdrop_points || 0);
-      document.getElementById('energyText').textContent = `${Math.max(0, Number(u.energy || 0))} / ${Math.max(1000, Number(u.max_energy || 1000))}`;
-      const fill = document.getElementById('fill');
-      const maxEnergy = Math.max(1, Number(u.max_energy || 1000));
-      const currEnergy = Math.max(0, Number(u.energy || 0));
-      fill.style.width = `${Math.min(100, (currEnergy / maxEnergy) * 100)}%`;
-      document.getElementById('level').textContent = Number(u.level || 1);
-      document.getElementById('taps').textContent = numberFormat(u.total_taps || 0);
-      document.getElementById('tid').textContent = u.telegram_id || '—';
-      document.getElementById('refLink').textContent = u.referral_code ? 'https://t.me/ebitocoinbot?start=ref_' + u.referral_code : 'Unavailable';
-      document.getElementById('friendsCount').textContent = Number(u.friends || 0);
-      document.getElementById('refEarn').textContent = numberFormat(u.referral_earnings || 0);
+    function updateStats() {
+      const p = state.player;
+      document.getElementById('coins').textContent = numberFormat(p.coins);
+      document.getElementById('profit').textContent = '+' + numberFormat(p.profitHour);
+      document.getElementById('power').textContent = '+' + numberFormat(p.tapPower);
+      document.getElementById('airdrop').textContent = numberFormat(p.airdrop);
+      document.getElementById('energyText').textContent = `${Math.max(0, p.energy)} / ${p.maxEnergy}`;
+      document.getElementById('fill').style.width = `${Math.min(100, (p.energy / Math.max(1, p.maxEnergy)) * 100)}%`;
+      document.getElementById('name').textContent = p.name;
+      document.getElementById('avatar').textContent = (p.name || 'E').charAt(0).toUpperCase();
+      document.getElementById('level').textContent = p.level;
+      document.getElementById('taps').textContent = numberFormat(p.totalTaps);
+      document.getElementById('pid').textContent = 'LOCAL';
+      document.getElementById('refLink').textContent = 'https://local.game/?ref=' + p.referralCode;
+      document.getElementById('friendsCount').textContent = p.friends;
+      document.getElementById('refEarn').textContent = numberFormat(p.referralEarnings);
+      document.getElementById('status').textContent = 'READY';
     }
 
     function renderCards() {
-      const cards = app.cards || [];
+      const cards = state.cards;
       const filters = document.getElementById('filters');
       const list = document.getElementById('cards');
-      const filterButtons = ['All', ...new Set(cards.map((c) => (c.category || 'General')).filter(Boolean))];
-      filters.innerHTML = filterButtons.map((cat, i) => `<button class="filter ${i === 0 ? 'active' : ''}" data-filter="${cat}">${cat}</button>`).join('');
+      const categories = ['All', ...new Set(cards.map((c) => c.category || 'General'))];
+      filters.innerHTML = categories.map((cat, index) => `<button class="filter ${index === 0 ? 'active' : ''}" data-filter="${cat}">${cat}</button>`).join('');
       filters.querySelectorAll('.filter').forEach((btn) => {
         btn.onclick = () => {
           filters.querySelectorAll('.filter').forEach((b) => b.classList.toggle('active', b === btn));
           const selected = btn.dataset.filter || 'All';
-          const items = cards.filter((c) => selected === 'All' || (c.category || 'General') === selected);
-          list.innerHTML = items.map((card) => `
-            <div class="card">
-              <div class="row"><h3>${card.name || 'Card'}</h3><span class="gold">+${numberFormat(card.tap_bonus || 0)}</span></div>
-              <p>${card.description || 'Upgrade your mining power.'}</p>
-              <div class="row">
-                <small>Cost ${numberFormat(card.cost || 0)} EBC</small>
-                <button onclick="upgradeCard(${card.id})">UPGRADE</button>
+          const items = cards.filter((card) => selected === 'All' || (card.category || 'General') === selected);
+          list.innerHTML = items.map((card) => {
+            const ownedLevel = Number(state.owned[card.id] || 0);
+            return `
+              <div class="card">
+                <div class="row"><h3>${card.name}</h3><span class="gold">+${numberFormat(card.tap_bonus || 0)}</span></div>
+                <p>${card.description}</p>
+                <div class="row">
+                  <small>Cost ${numberFormat(card.cost || 0)} EBC • Lv ${ownedLevel}</small>
+                  <button onclick="upgradeCard(${card.id})">UPGRADE</button>
+                </div>
               </div>
-            </div>
-          `).join('') || '<div class="muted">No cards found.</div>';
+            `;
+          }).join('') || '<div class="muted">No cards found.</div>';
         };
       });
-      const initialFilter = filters.querySelector('.filter.active') || filters.querySelector('.filter');
-      if (initialFilter) initialFilter.click();
+      const initial = filters.querySelector('.filter.active') || filters.querySelector('.filter');
+      if (initial) initial.click();
       document.getElementById('cardCount').textContent = `${cards.length} cards`;
     }
 
     function renderTasks() {
-      const tasks = app.tasks || [];
       const host = document.getElementById('tasks');
-      host.innerHTML = tasks.length ? tasks.map((task) => `
-        <div class="card">
-          <div class="row"><h3>${task.title || 'Mission'}</h3><span class="gold">+${numberFormat(task.reward || 0)}</span></div>
-          <p>${task.description || 'Complete this mission.'}</p>
-          <button onclick="claimTask(${task.id})" ${task.claimed ? 'disabled' : ''}>${task.claimed ? 'CLAIMED' : 'CLAIM'}</button>
-        </div>
-      `).join('') : '<div class="muted">No tasks available.</div>';
+      const tasks = state.tasks;
+      host.innerHTML = tasks.map((task) => {
+        const done = Boolean(state.taskProgress[task.id]);
+        return `
+          <div class="card">
+            <div class="row"><h3>${task.title}</h3><span class="gold">+${numberFormat(task.reward)}</span></div>
+            <p>${task.description}</p>
+            <button onclick="claimTask(${task.id})" ${done ? 'disabled' : ''}>${done ? 'CLAIMED' : 'CLAIM'}</button>
+          </div>
+        `;
+      }).join('') || '<div class="muted">No quests active.</div>';
     }
 
     function renderCombo() {
-      const combo = app.combo;
+      const combo = state.combo;
       const host = document.getElementById('combo');
       const homeHost = document.getElementById('comboHome');
       const msg = document.getElementById('comboMsg');
-      const claimBtn = document.getElementById('claimCombo');
-      if (!combo || !combo.cards || combo.cards.length === 0) {
-        host.innerHTML = '<div class="muted">No combo available.</div>';
-        if (homeHost) homeHost.textContent = 'No combo available';
-        if (msg) msg.textContent = 'No combo available.';
-        if (claimBtn) claimBtn.disabled = true;
-        return;
-      }
-      const cards = combo.cards.map((card) => `
+      const btn = document.getElementById('claimCombo');
+      const cards = state.cards.filter((card) => combo.cards.includes(card.id));
+      const html = cards.map((card) => `
         <div class="card">
-          <h3>${card.name || 'Card'}</h3>
-          <p>${card.description || 'Hidden card.'}</p>
+          <h3>${card.name}</h3>
+          <p>${card.description}</p>
           <small>${card.category || 'General'}</small>
         </div>
       `).join('');
-      host.innerHTML = cards;
-      if (homeHost) homeHost.innerHTML = cards;
-      const isComplete = Boolean(combo.complete);
-      const isClaimed = Boolean(combo.claimed);
+      host.innerHTML = html;
+      if (homeHost) homeHost.innerHTML = html;
+      const isComplete = combo.complete;
+      const isClaimed = combo.claimed;
       if (msg) msg.textContent = isClaimed ? 'Daily combo already claimed today.' : isComplete ? 'All 3 cards are complete. Claim the reward!' : 'Upgrade all 3 cards to claim the reward.';
-      if (claimBtn) {
-        claimBtn.disabled = isClaimed || !isComplete;
-        claimBtn.textContent = isClaimed ? 'CLAIMED' : 'CLAIM REWARD';
+      if (btn) {
+        btn.disabled = isClaimed || !isComplete;
+        btn.textContent = isClaimed ? 'CLAIMED' : 'CLAIM REWARD';
       }
     }
 
-    function renderLeaders() {
-      const leaders = app.leaders || [];
-      document.getElementById('leaders').innerHTML = leaders.length ? leaders.map((u, i) => `
+    function renderLeaderboard() {
+      const leaders = state.leaderboard.length ? state.leaderboard : [
+        { name: 'You', coins: state.player.coins },
+        { name: 'Ava', coins: 2200 },
+        { name: 'Leo', coins: 1800 }
+      ];
+      document.getElementById('leaders').innerHTML = leaders.map((user, i) => `
         <div class="row" style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,.08);">
-          <span>#${i + 1} ${u.first_name || u.username || 'Player'}</span>
-          <b class="gold">${numberFormat(u.coins || 0)}</b>
+          <span>#${i + 1} ${user.name}</span>
+          <b class="gold">${numberFormat(user.coins)}</b>
         </div>
-      `).join('') : '<div class="muted">No leaderboard data.</div>';
+      `).join('');
     }
 
-    async function fetchJson(url, options = {}) {
-      const res = await fetch(url, {
-        headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
-        ...options
-      });
-      const text = await res.text();
-      let data = null;
-      try { data = text ? JSON.parse(text) : null; } catch { data = { raw: text }; }
-      if (!res.ok) {
-        throw new Error(data && data.error ? data.error : `HTTP ${res.status}`);
-      }
-      return data;
+    function refreshLeaderboard() {
+      const p = state.player;
+      const list = [
+        { name: p.name, coins: p.coins },
+        ...state.leaderboard.filter((u) => u.name !== p.name)
+      ].sort((a, b) => Number(b.coins || 0) - Number(a.coins || 0)).slice(0, 10);
+      state.leaderboard = list;
+      renderLeaderboard();
     }
 
-    function demoUser() {
-      return {
-        telegram_id: '0',
-        first_name: 'Demo',
-        last_name: 'Player',
-        coins: 1200,
-        energy: 1000,
-        max_energy: 1000,
-        tap_power: 1,
-        total_taps: 0,
-        airdrop_points: 0,
-        level: 1,
-        referral_code: 'EBITO0',
-        profit_hour: 0,
-        friends: 0,
-        referral_earnings: 0
-      };
+    function claimTask(taskId) {
+      const task = state.tasks.find((t) => t.id === taskId);
+      if (!task || state.taskProgress[taskId]) return;
+      const p = state.player;
+      const reward = Number(task.reward || 0);
+      state.taskProgress[taskId] = true;
+      p.coins += reward;
+      p.airdrop += reward;
+      saveState();
+      updateStats();
+      renderTasks();
+      refreshLeaderboard();
+      toast('Task reward claimed');
     }
 
-    async function authUser() {
-      if (!window.supabase || typeof window.supabase.createClient !== 'function') {
-        throw new Error('Supabase is not loaded.');
-      }
-      if (!app.tg || !app.tg.initData) {
-        app.demoMode = true;
-        app.user = demoUser();
-        renderUser();
-        setStatus('DEMO');
+    function upgradeCard(cardId) {
+      const card = state.cards.find((c) => c.id === cardId);
+      if (!card) return;
+      const p = state.player;
+      const owned = Number(state.owned[cardId] || 0);
+      const cost = Number(card.cost || 0) + owned * 100;
+      if (p.coins < cost) {
+        toast('Not enough coins');
         return;
       }
-
-      app.db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-        auth: { persistSession: false, autoRefreshToken: false }
-      });
-
-      const res = await fetchJson(`${SUPABASE_URL}/functions/v1/telegram-auth`, {
-        method: 'POST',
-        headers: { 'apikey': SUPABASE_KEY },
-        body: JSON.stringify({ initData: app.tg.initData })
-      });
-      if (!res || !res.ok || !res.user) throw new Error(res && res.error ? res.error : 'Authentication failed.');
-      app.user = res.user;
-      app.user.telegram_id = String(app.user.telegram_id || app.tg.initDataUnsafe?.user?.id || '0');
-      app.demoMode = false;
-      renderUser();
-    }
-
-    async function loadCards() {
-      const { data, error } = await app.db.from('upgrades').select('*').order('id');
-      if (error) throw error;
-      app.cards = data || [];
+      p.coins -= cost;
+      state.owned[cardId] = owned + 1;
+      p.tapPower += Number(card.tap_bonus || 0);
+      p.profitHour += Number(card.tap_bonus || 0) * 5;
+      saveState();
+      updateStats();
       renderCards();
+      refreshComboStatus();
+      refreshLeaderboard();
+      toast('Upgrade purchased');
     }
 
-    async function loadTasks() {
-      const { data, error } = await app.db.from('tasks').select('*').eq('active', true).order('id');
-      if (error) throw error;
-      app.tasks = (data || []).map((task) => ({ ...task, claimed: false }));
-      renderTasks();
-    }
-
-    async function loadCombo() {
-      const { data, error } = await app.db.from('daily_combos').select('*').order('combo_date', { ascending: false }).limit(1);
-      if (error) throw error;
-      app.combo = data && data[0] ? { ...data[0], cards: [] } : null;
-      if (app.combo && app.cards && app.cards.length) {
-        const ids = [app.combo.card_1, app.combo.card_2, app.combo.card_3];
-        app.combo.cards = app.cards.filter((card) => ids.includes(card.id));
-      }
+    function refreshComboStatus() {
+      const ownedIds = Object.keys(state.owned).map(Number);
+      const required = state.combo.cards;
+      state.combo.complete = required.every((id) => ownedIds.includes(id));
+      state.combo.claimed = Boolean(state.player.dailyComboClaimed);
       renderCombo();
     }
 
-    async function loadLeaderboard() {
-      const { data, error } = await app.db.from('users').select('first_name, username, coins').order('coins', { ascending: false }).limit(10);
-      if (error) throw error;
-      app.leaders = data || [];
-      renderLeaders();
-    }
-
-    async function boot() {
-      try {
-        if (!window.supabase || typeof window.supabase.createClient !== 'function') {
-          throw new Error('Supabase JavaScript library is unavailable.');
-        }
-        if (!app.tg) {
-          app.demoMode = true;
-          app.user = demoUser();
-          app.db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-            auth: { persistSession: false, autoRefreshToken: false }
-          });
-          setStatus('DEMO');
-          document.getElementById('status').textContent = 'DEMO';
-          window.EBiTODiagnostic.ok('Telegram WebApp is unavailable; demo mode enabled.');
-        } else {
-          await authUser();
-        }
-        renderUser();
-        if (app.db) {
-          await Promise.all([loadCards(), loadTasks(), loadCombo(), loadLeaderboard()]);
-        }
-        setStatus('READY');
-        window.EBiTODiagnostic.ok('Startup finished successfully.');
-      } catch (err) {
-        const msg = err && err.message ? err.message : String(err);
-        setStatus('ERROR');
-        window.EBiTODiagnostic.fail(msg);
-        console.error(msg);
+    function claimCombo() {
+      if (!state.combo.complete) {
+        toast('Complete all 3 cards first');
+        return;
       }
-    }
-
-    async function upgradeCard(cardId) {
-      if (!app.user && !app.demoMode) return toast('Login required.');
-      try {
-        const payload = {
-          initData: app.tg ? app.tg.initData : '',
-          action: 'upgrade',
-          upgradeId: Number(cardId)
-        };
-        const res = await fetchJson(`${SUPABASE_URL}/functions/v1/game-action`, {
-          method: 'POST',
-          headers: { 'apikey': SUPABASE_KEY },
-          body: JSON.stringify(payload)
-        });
-        if (res && res.user) app.user = res.user;
-        renderUser();
-        toast('Upgrade purchased');
-        await loadCards();
-      } catch (err) {
-        toast(err && err.message ? err.message : 'Upgrade failed');
+      if (state.player.dailyComboClaimed) {
+        toast('Combo already claimed');
+        return;
       }
-    }
-
-    async function claimTask(taskId) {
-      if (!app.user && !app.demoMode) return toast('Login required.');
-      try {
-        const res = await fetchJson(`${SUPABASE_URL}/functions/v1/game-action`, {
-          method: 'POST',
-          headers: { 'apikey': SUPABASE_KEY },
-          body: JSON.stringify({ initData: app.tg ? app.tg.initData : '', action: 'task', taskId })
-        });
-        if (res && res.user) app.user = res.user;
-        toast('Task reward claimed');
-        await loadTasks();
-        renderUser();
-      } catch (err) {
-        toast(err && err.message ? err.message : 'Task failed');
-      }
-    }
-
-    async function claimCombo() {
-      if (!app.user && !app.demoMode) return toast('Login required.');
-      try {
-        const res = await fetchJson(`${SUPABASE_URL}/functions/v1/daily-combo`, {
-          method: 'POST',
-          headers: { 'apikey': SUPABASE_KEY },
-          body: JSON.stringify({ initData: app.tg ? app.tg.initData : '', action: 'claim' })
-        });
-        if (res && res.user) app.user = res.user;
-        toast('Daily combo claimed');
-        await loadCombo();
-        renderUser();
-      } catch (err) {
-        toast(err && err.message ? err.message : 'Combo claim failed');
-      }
+      const p = state.player;
+      p.coins += 5000000;
+      p.airdrop += 5000000;
+      p.dailyComboClaimed = true;
+      p.lastDaily = new Date().toISOString().slice(0, 10);
+      saveState();
+      updateStats();
+      refreshComboStatus();
+      refreshLeaderboard();
+      toast('Daily combo reward claimed');
     }
 
     function startGame() {
-      if (!app.tg && !app.demoMode) return toast('Open in Telegram to play.');
-      const gameBox = document.getElementById('gameBox');
-      const timerEl = document.getElementById('timer');
-      const scoreEl = document.getElementById('score');
-      if (app.game.running) return;
-      app.game.running = true;
-      app.game.score = 0;
-      app.game.start = Date.now();
-      gameBox.classList.remove('hidden');
-      timerEl.textContent = '30';
-      scoreEl.textContent = '0';
-      app.game.timer = setInterval(() => {
-        const elapsed = Math.max(0, 30 - Math.floor((Date.now() - app.game.start) / 1000));
-        timerEl.textContent = String(elapsed);
+      if (app.gameRunning) return;
+      app.gameRunning = true;
+      app.gameScore = 0;
+      app.gameStart = Date.now();
+      document.getElementById('gameBox').classList.remove('hidden');
+      document.getElementById('timer').textContent = '30';
+      document.getElementById('score').textContent = '0';
+      app.gameTimer = setInterval(() => {
+        const elapsed = Math.max(0, 30 - Math.floor((Date.now() - app.gameStart) / 1000));
+        document.getElementById('timer').textContent = String(elapsed);
         if (elapsed <= 0) {
-          clearInterval(app.game.timer);
+          clearInterval(app.gameTimer);
           finishGame();
         }
       }, 100);
     }
 
-    async function finishGame() {
-      if (!app.game.running) return;
-      app.game.running = false;
-      const score = Number(app.game.score || 0);
-      const gameBox = document.getElementById('gameBox');
-      gameBox.classList.add('hidden');
-      try {
-        const res = await fetchJson(`${SUPABASE_URL}/functions/v1/game-action`, {
-          method: 'POST',
-          headers: { 'apikey': SUPABASE_KEY },
-          body: JSON.stringify({ initData: app.tg ? app.tg.initData : '', action: 'game', score })
-        });
-        if (res && res.user) app.user = res.user;
-        toast(`Game finished: ${score} taps`);
-        renderUser();
-      } catch (err) {
-        toast(err && err.message ? err.message : 'Game failed');
-      }
+    function gameTap() {
+      if (!app.gameRunning) return;
+      app.gameScore += 1;
+      document.getElementById('score').textContent = String(app.gameScore);
     }
 
-    function gameTap() {
-      if (!app.game.running) return;
-      app.game.score += 1;
-      document.getElementById('score').textContent = String(app.game.score);
+    async function finishGame() {
+      const reward = app.gameScore * 10;
+      app.gameRunning = false;
+      document.getElementById('gameBox').classList.add('hidden');
+      const p = state.player;
+      p.coins += reward;
+      p.airdrop += reward;
+      p.totalTaps += app.gameScore;
+      saveState();
+      updateStats();
+      refreshLeaderboard();
+      toast(`Game reward: ${reward} EBC`);
     }
 
     function copyRef() {
@@ -629,7 +538,27 @@
       navigator.clipboard?.writeText(text).then(() => toast('Referral link copied')).catch(() => toast('Copy failed'));
     }
 
-    boot();
+    function tickPassiveIncome() {
+      const p = state.player;
+      p.coins += p.profitHour / 6;
+      p.energy = Math.min(p.maxEnergy, p.energy + 1);
+      if (p.energy >= p.maxEnergy) p.energy = p.maxEnergy;
+      updateStats();
+      refreshLeaderboard();
+      saveState();
+    }
+
+    function bootstrap() {
+      updateStats();
+      renderCards();
+      renderTasks();
+      refreshComboStatus();
+      renderLeaderboard();
+      refreshLeaderboard();
+      setInterval(tickPassiveIncome, 10000);
+    }
+
+    bootstrap();
   </script>
 </body>
 </html>
