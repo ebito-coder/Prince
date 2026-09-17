@@ -1,92 +1,635 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><meta name="theme-color" content="#06110c"><title>EBiTO Coin</title><script src="https://telegram.org/js/telegram-web-app.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><style>:root{--bg:#06110c;--p:#0b1c13;--p2:#10281b;--g:#28e77d;--gold:#ffd85a;--t:#f2fff7;--m:#8ea99a;--l:rgba(255,255,255,.08)}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--t);font-family:system-ui,Arial}.app{max-width:560px;margin:auto;padding-bottom:90px}.head{padding:15px;border-bottom:1px solid var(--l);position:sticky;top:0;background:#06110cee;z-index:5}.row{display:flex;align-items:center;justify-content:space-between;gap:10px}.logo{font-size:20px;font-weight:900}.status{font-size:10px;color:var(--g);border:1px solid #28e77d44;border-radius:99px;padding:5px 8px}.view{display:none;padding:16px}.view.active{display:block}.balance,.box,.card,.notice{background:var(--p);border:1px solid var(--l);border-radius:20px;padding:16px;margin-bottom:12px}.balance{text-align:center}.label,.muted,small{color:var(--m);font-size:11px}.coins{font-size:42px;font-weight:950}.gold{color:var(--gold)}.stats,.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:15px}.stat{background:#ffffff08;padding:10px;border-radius:12px;text-align:center}.stat b{display:block;margin-top:3px}.coin{width:180px;height:180px;margin:30px auto 18px;border-radius:50%;display:grid;place-items:center;font-size:90px;background:radial-gradient(circle at 35% 30%,#fff3a0,#ffd43d 35%,#9b6b00);user-select:none;touch-action:none}.energy{height:10px;background:#102117;border-radius:20px;overflow:hidden}.fill{height:100%;background:var(--g)}button{color:var(--t);background:var(--p2);border:1px solid var(--l);border-radius:13px;padding:11px;font-weight:800}button:disabled{opacity:0.5;cursor:not-allowed}.quick{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}.quick button{font-size:12px}.section{display:flex;justify-content:space-between;align-items:center;margin:20px 0 10px}.section h2{font-size:17px;margin:0}.filters{display:flex;gap:7px;overflow:auto;margin-bottom:10px}.filter.active{color:var(--g);border-color:#28e77d55}.cards{display:grid;gap:10px}.card h3{margin:0}.card p{font-size:12px;color:var(--m);line-height:1.5}.primary{width:100%;background:linear-gradient(135deg,#1bd66e,#0a8f4a)}.goldbtn{width:100%;background:linear-gradient(135deg,#ffd85a,#b78300);color:#1b1303}.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(560px,100%);display:grid;grid-template-columns:repeat(6,1fr);background:#050f0af5;border-top:1px solid var(--l);z-index:10}.nav button{border:0;background:none;font-size:10px;padding:9px 2px}.nav button b{display:block;font-size:19px}.nav button.active{color:var(--g)}.toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#17301f;border:1px solid var(--l);padding:10px 14px;border-radius:12px;display:none;z-index:20}.toast.show{display:block}.hidden{display:none}</style></head><body><div class="app"><header class="head"><div class="row"><div class="logo">🪙 EBiTO Coin</div><div id="status" class="status">CONNECTING</div></div></header><main>
-<div id="diagnostic" style="position:fixed;inset:0;background:#06110c;color:#f2fff7;z-index:9999;display:none;padding:18px;font-family:system-ui,Arial;overflow:auto">
-  <div style="max-width:560px;margin:auto">
-    <h2 style="margin:0 0 8px">🛠️ EBiTO Connection Diagnostic</h2>
-    <p style="color:#8ea99a;margin-top:0">This screen shows exactly where startup is failing.</p>
-    <div id="diagStatus" style="background:#0b1c13;border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:14px;white-space:pre-wrap;line-height:1.6">Starting diagnostic…</div>
-    <button onclick="location.reload()" style="margin-top:12px;width:100%;padding:13px">RETRY</button>
-    <button onclick="document.getElementById('diagnostic').style.display='none'" style="margin-top:8px;width:100%;padding:13px">CLOSE DIAGNOSTIC</button>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#06110c">
+  <title>EBiTO Coin</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --bg: #06110c;
+      --panel: #0b1c13;
+      --panel-2: #10281b;
+      --line: rgba(255,255,255,.12);
+      --text: #f2fff7;
+      --muted: #8ea99a;
+      --green: #2fe38a;
+      --gold: #ffd84a;
+      --gold-2: #ffb347;
+      --red: #ff6a6a;
+      --primary: #38d39f;
+      --shadow: rgba(0,0,0,.35);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: system-ui, Arial, sans-serif; }
+    body { min-height: 100vh; }
+    .app { max-width: 560px; margin: 0 auto; padding-bottom: 88px; }
+    .head { position: sticky; top: 0; z-index: 10; background: rgba(6,17,12,.92); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
+    .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .logo { font-weight: 900; font-size: 20px; letter-spacing: .04em; padding: 16px 18px; }
+    .status { font-size: 10px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 99px; color: var(--gold); background: rgba(255,216,74,.08); }
+    .section { padding: 16px 18px 0; }
+    .section h2 { margin: 0; font-size: 18px; }
+    .section small { color: var(--muted); }
+    .view { display: none; }
+    .view.active { display: block; }
+    .balance, .box, .card, .notice { background: var(--panel); border: 1px solid var(--line); border-radius: 22px; padding: 16px; margin-top: 12px; box-shadow: 0 20px 25px rgba(0,0,0,.18); }
+    .label { color: var(--muted); font-size: 11px; letter-spacing: .14em; }
+    .coins { font-size: 42px; font-weight: 900; margin: 8px 0; }
+    .gold { color: var(--gold); }
+    .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
+    .stat { background: rgba(255,255,255,.04); border: 1px solid var(--line); border-radius: 14px; padding: 10px 8px; text-align: center; }
+    .stat small { display: block; color: var(--muted); }
+    .stat b { display: block; margin-top: 4px; }
+    .coin { width: 180px; height: 180px; margin: 8px auto 0; display: grid; place-items: center; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff3ae, #ffd84a 35%, #b78200 100%); color: #1b1303; font-size: 60px; font-weight: 900; user-select: none; touch-action: none; }
+    .energy { height: 12px; background: rgba(255,255,255,.05); border-radius: 999px; overflow: hidden; }
+    .energy .fill { display: block; height: 100%; width: 100%; background: linear-gradient(90deg, var(--primary), var(--green)); }
+    .quick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+    button { border: 1px solid var(--line); background: var(--panel-2); color: var(--text); border-radius: 12px; padding: 12px 10px; font-weight: 700; cursor: pointer; }
+    button.primary, .goldbtn { background: linear-gradient(180deg, #ffd84a, #dd9d00); color: #1b1303; border: none; }
+    button[disabled] { opacity: .5; cursor: not-allowed; }
+    .muted { color: var(--muted); }
+    .box .row { margin-top: 10px; }
+    .cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 12px; }
+    .card { padding: 14px; }
+    .card h3 { margin: 0; font-size: 16px; }
+    .card p { margin: 8px 0 12px; color: var(--muted); line-height: 1.5; font-size: 13px; }
+    .card .row { margin-top: 0; }
+    .filters { display: flex; gap: 8px; overflow: auto; margin-top: 12px; }
+    .filter { padding: 8px 12px; background: rgba(255,255,255,.04); border: 1px solid var(--line); border-radius: 999px; white-space: nowrap; }
+    .filter.active { color: var(--gold); border-color: rgba(255,216,74,.35); }
+    .nav { position: fixed; left: 50%; bottom: 12px; transform: translateX(-50%); width: min(560px, calc(100% - 18px)); display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; background: rgba(11,28,19,.8); border: 1px solid var(--line); border-radius: 18px; padding: 8px; backdrop-filter: blur(8px); }
+    .nav button { background: transparent; border: none; padding: 10px 6px; border-radius: 12px; font-size: 12px; }
+    .nav button.active { background: rgba(255,255,255,.04); color: var(--gold); }
+    .toast { position: fixed; left: 50%; bottom: 110px; transform: translateX(-50%) translateY(20px); background: #17301f; border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; opacity: 0; transition: opacity .2s ease, transform .2s ease; z-index: 20; }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    #game { text-align: center; }
+    #game .tap-button { width: 170px; height: 170px; border-radius: 50%; margin: 12px auto; font-size: 28px; }
+    #game .score-box { font-size: 36px; font-weight: 900; color: var(--gold); }
+    .hidden { display: none !important; }
+    @media (max-width: 420px) {
+      .cards { grid-template-columns: 1fr; }
+      .nav button { font-size: 11px; }
+      .coins { font-size: 34px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="head row">
+      <div class="logo">EBiTO Coin</div>
+      <div id="status" class="status">CONNECTING</div>
+    </header>
+
+    <div id="diagnostic" style="position:fixed;inset:0;background:#06110c;color:#f2fff7;z-index:9999;display:none;padding:18px;font-family:system-ui,Arial;overflow:auto;">
+      <div style="max-width:560px;margin:auto;">
+        <h2 style="margin:0 0 8px;">🛠️ EBiTO Connection Diagnostic</h2>
+        <p style="color:#8ea99a;margin-top:0;">This screen shows exactly where startup is failing.</p>
+        <div id="diagStatus" style="background:#0b1c13;border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:14px;white-space:pre-wrap;line-height:1.6;">Starting diagnostic…</div>
+        <button onclick="location.reload()" style="margin-top:12px;width:100%;padding:13px;">RETRY</button>
+        <button onclick="document.getElementById('diagnostic').style.display='none'" style="margin-top:8px;width:100%;padding:13px;">CLOSE DIAGNOSTIC</button>
+      </div>
+    </div>
+
+    <main>
+      <section id="home" class="view active">
+        <div class="section">
+          <div class="balance">
+            <div class="label">YOUR BALANCE</div>
+            <div id="coins" class="coins">0</div>
+            <div class="gold">EBC</div>
+            <div class="stats">
+              <div class="stat"><small>Profit/hour</small><b id="profit">+0</b></div>
+              <div class="stat"><small>Tap power</small><b id="power">+1</b></div>
+              <div class="stat"><small>Airdrop</small><b id="airdrop">0</b></div>
+            </div>
+          </div>
+          <div class="box">
+            <div class="row"><small>ENERGY</small><small id="energyText">1000 / 1000</small></div>
+            <div class="energy" aria-label="Energy"><span id="fill" class="fill" style="width:100%"></span></div>
+            <div class="quick">
+              <button onclick="nav('mine')">Mine</button>
+              <button onclick="nav('earn')">Earn</button>
+              <button onclick="nav('friends')">Invite</button>
+            </div>
+          </div>
+          <div class="box" style="margin-top:16px;">
+            <h2>⚡ Daily Combo</h2>
+            <small>3 cards daily</small>
+            <div id="comboHome" style="margin-top:10px;">Loading…</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="mine" class="view">
+        <div class="section">
+          <div class="row"><h2>⛏️ Mine</h2><small id="cardCount">0 cards</small></div>
+          <div class="box">
+            <div class="row"><b>⚡ Daily Combo</b><b class="gold">+5,000,000</b></div>
+            <small id="comboTimer">Loading…</small>
+            <div id="combo" class="cards"></div>
+            <p id="comboMsg" class="muted">Loading daily combo…</p>
+            <button id="claimCombo" class="goldbtn" onclick="claimCombo()" style="width:100%;margin-top:8px;">COMPLETE COMBO</button>
+          </div>
+
+          <div class="section" style="padding:0;">
+            <h2 style="margin-top:18px;">🧩 Card Market</h2>
+            <small>Upgrade your empire</small>
+            <div id="filters" class="filters"></div>
+            <div id="cards" class="cards"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="earn" class="view">
+        <div class="section">
+          <div class="box">
+            <h2>🎁 Earn</h2>
+            <small>Complete active EBiTO missions to earn EBC and airdrop points.</small>
+            <div id="tasks" class="cards" style="margin-top:12px;"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="friends" class="view">
+        <div class="section">
+          <div class="box">
+            <b>Your referral link</b>
+            <div class="row" style="margin-top:10px;">
+              <small id="refLink">Loading…</small>
+              <button onclick="copyRef()">COPY</button>
+            </div>
+          </div>
+          <div class="stats">
+            <div class="stat"><small>Friends</small><b id="friendsCount">0</b></div>
+            <div class="stat"><small>Referral earnings</small><b id="refEarn">0</b></div>
+            <div class="stat"><small>Bounties</small><b>10%</b></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="games" class="view">
+        <div class="section">
+          <div class="card" id="game">
+            <h3>⚡ Speed Tap</h3>
+            <p>Tap as fast as possible for 30 seconds.</p>
+            <button class="primary" onclick="startGame()">PLAY</button>
+            <div id="gameBox" class="hidden" style="text-align:center;margin-top:12px;">
+              <div id="timer" class="score-box">30</div>
+              <div><span id="score">0</span> taps</div>
+              <button class="tap-button primary" onclick="gameTap()">TAP</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="leaderboard" class="view">
+        <div class="section">
+          <div class="box">
+            <h2>🏆 Leaderboard</h2>
+            <small>Top miners</small>
+            <div id="leaders" style="margin-top:12px;"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="profile" class="view">
+        <div class="section">
+          <div class="box">
+            <div class="row">
+              <b id="name">EBiTO Player</b>
+              <span id="avatar">E</span>
+            </div>
+          </div>
+          <div class="box">
+            <div class="row"><span>Level</span><b id="level">1</b></div>
+            <div class="row"><span>Total taps</span><b id="taps">0</b></div>
+            <div class="row"><span>Telegram ID</span><b id="tid">—</b></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <nav id="nav" class="nav">
+      <button data-p="home" class="active" onclick="nav('home')"><b>🏠</b><br>Home</button>
+      <button data-p="mine" onclick="nav('mine')"><b>⛏️</b><br>Mine</button>
+      <button data-p="earn" onclick="nav('earn')"><b>🎁</b><br>Earn</button>
+      <button data-p="games" onclick="nav('games')"><b>🎮</b><br>Games</button>
+      <button data-p="profile" onclick="nav('profile')"><b>👤</b><br>Profile</button>
+    </nav>
   </div>
-</div>
 
-<section id="home" class="view active"><div class="balance"><div class="label">YOUR BALANCE</div><div id="coins" class="coins">0</div><div class="gold">EBC</div><div class="stats"><div class="stat"><small>Profit/hour</small><b id="profit">+0</b></div><div class="stat"><small>Tap power</small><b id="power">+1</b></div><div class="stat"><small>Airdrop</small><b id="airdrop">0</b></div></div></div><div class="coin" id="coin">🪙</div><div class="row"><small>ENERGY</small><small id="energyText">1000 / 1000</small></div><div class="energy"><div id="fill" class="fill" style="width:100%"></div></div><div class="quick"><button onclick="nav('mine')">⛏️<br>Mine</button><button onclick="nav('earn')">🎁<br>Earn</button><button onclick="nav('friends')">👥<br>Invite</button></div><div class="section"><h2>⚡ Daily Combo</h2><small>3 cards daily</small></div><div class="box"><div id="comboHome">Loading…</div></div></section>
+  <div id="toast" class="toast" aria-live="polite"></div>
 
-<section id="mine" class="view"><div class="section"><h2>⛏️ Mine</h2><small id="cardCount">0 cards</small></div><div class="box"><div class="row"><b>⚡ Daily Combo</b><b class="gold">+5,000,000</b></div><small id="comboTimer"></small><div id="combo" class="grid"></div><p id="comboMsg" class="muted">Loading…</p><button id="claimCombo" class="goldbtn" disabled onclick="claimCombo()">COMPLETE COMBO</button></div><div class="section"><h2>🛠️ Card Market</h2><small>Upgrade your empire</small></div><div id="filters" class="filters"></div><div id="cards" class="cards"></div></section>
+  <script>
+    (() => {
+      const box = document.getElementById('diagnostic');
+      const out = document.getElementById('diagStatus');
+      const lines = [];
+      function d(msg) {
+        lines.push((new Date()).toLocaleTimeString() + '  ' + msg);
+        if (out) out.textContent = lines.join('\n');
+        console.log('[EBiTO]', msg);
+      }
+      window.EBiTODiagnostic = {
+        show(msg) { if (box) box.style.display = 'block'; d(msg); },
+        ok(msg) { d('✅ ' + msg); },
+        fail(msg) { d('❌ ' + msg); if (box) box.style.display = 'block'; }
+      };
+      window.addEventListener('error', (e) => {
+        if (window.EBiTODiagnostic) window.EBiTODiagnostic.fail('JavaScript error: ' + (e.message || 'Unknown error'));
+      });
+      window.addEventListener('unhandledrejection', (e) => {
+        const r = e && e.reason ? e.reason : e;
+        window.EBiTODiagnostic.fail('Unhandled promise error: ' + (r && r.message ? r.message : String(r)));
+      });
+      d('Page JavaScript started.');
+      d('Telegram library: ' + (window.Telegram && window.Telegram.WebApp ? 'FOUND' : 'NOT FOUND'));
+      d('Supabase library: ' + (window.supabase && typeof window.supabase.createClient === 'function' ? 'FOUND' : 'NOT FOUND'));
+    })();
+  </script>
 
-<section id="earn" class="view"><div class="section"><h2>🎁 Earn</h2><small>Missions</small></div><div class="notice">Complete active EBiTO missions to earn EBC and airdrop points.</div><div id="tasks" class="cards"></div></section>
+  <script>
+    const SUPABASE_URL = 'https://tdkrogqygwqmocntnjba.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_o6IgAiYRQ5h1jdjE3ODpog_-HzJF4B';
+    const ADMIN_ID = '6457637080';
+    const app = {
+      tg: window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null,
+      db: null,
+      user: null,
+      cards: [],
+      tasks: [],
+      combo: null,
+      leaders: [],
+      demoMode: false,
+      game: { running: false, score: 0, start: 0, timer: null }
+    };
 
-<section id="friends" class="view"><div class="section"><h2>👥 Friends</h2><small>Referrals</small></div><div class="box"><b>Your referral link</b><div class="row" style="margin-top:10px"><small id="refLink">Loading…</small><button onclick="copyRef()">COPY</button></div></div><div class="stats"><div class="stat"><small>Friends</small><b id="friends">0</b></div><div class="stat"><small>Referral earnings</small><b id="refEarn">0</b></div><div class="stat"><small>Bonus</small><b>10%</b></div></div></section>
+    function toast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      clearTimeout(toast._timer);
+      toast._timer = setTimeout(() => t.classList.remove('show'), 2200);
+    }
 
-<section id="games" class="view"><div class="section"><h2>🎮 Games</h2><small>Play & earn</small></div><div class="card"><h3>⚡ Speed Tap</h3><p>Tap as fast as possible for 30 seconds.</p><button class="primary" onclick="startGame()">PLAY</button></div><div id="game" class="box hidden" style="text-align:center"><b id="timer" style="font-size:38px">30</b><div><span id="score">0</span> taps</div><button onclick="gameTap()" style="width:170px;height:170px;border-radius:50%;font-size:28px;margin:15px">TAP</button></div></section>
+    function nav(page) {
+      document.querySelectorAll('.view').forEach((v) => v.classList.toggle('active', v.id === page));
+      document.querySelectorAll('.nav button').forEach((b) => b.classList.toggle('active', b.dataset.p === page));
+    }
 
-<section id="leaderboard" class="view"><div class="section"><h2>🏆 Leaderboard</h2><small>Top miners</small></div><div id="leaders" class="box">Loading…</div></section>
+    function numberFormat(value) {
+      const num = Number(value || 0);
+      if (num >= 1000000) return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+      if (num >= 1000) return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+      return String(num);
+    }
 
-<section id="profile" class="view"><div class="section"><h2>👤 Profile</h2><small id="role">Player</small></div><div class="box"><div class="row"><b id="name">EBiTO Player</b><span id="avatar">E</span></div></div><div class="box"><div class="row"><span>Level</span><b id="level">1</b></div><div class="row"><span>Total taps</span><b id="taps">0</b></div><div class="row"><span>Telegram ID</span><b id="tid">–</b></div></div></section>
+    function setStatus(text) {
+      const el = document.getElementById('status');
+      if (el) el.textContent = text;
+    }
 
-<section id="admin" class="view"><div class="section"><h2>👑 Admin Center</h2><small>OWNER</small></div><div class="notice">Server-protected admin area. Admin ID: 6457637080.</div><div class="stats"><div class="stat"><small>Users</small><b id="aUsers">–</b></div><div class="stat"><small>Coins</small><b id="aCoins">–</b></div><div class="stat"><small>Taps</small><b id="aTaps">–</b></div></div><div id="aList" class="box">Loading…</div></section></main>
+    function renderUser() {
+      const u = app.user || {};
+      const name = [u.first_name, u.last_name].filter(Boolean).join(' ') || 'EBiTO Player';
+      document.getElementById('name').textContent = name;
+      document.getElementById('avatar').textContent = (name || 'E').charAt(0).toUpperCase();
+      document.getElementById('coins').textContent = numberFormat(u.coins || 0);
+      document.getElementById('profit').textContent = '+' + numberFormat(u.profit_hour || 0);
+      document.getElementById('power').textContent = '+' + numberFormat(u.tap_power || 1);
+      document.getElementById('airdrop').textContent = numberFormat(u.airdrop_points || 0);
+      document.getElementById('energyText').textContent = `${Math.max(0, Number(u.energy || 0))} / ${Math.max(1000, Number(u.max_energy || 1000))}`;
+      const fill = document.getElementById('fill');
+      const maxEnergy = Math.max(1, Number(u.max_energy || 1000));
+      const currEnergy = Math.max(0, Number(u.energy || 0));
+      fill.style.width = `${Math.min(100, (currEnergy / maxEnergy) * 100)}%`;
+      document.getElementById('level').textContent = Number(u.level || 1);
+      document.getElementById('taps').textContent = numberFormat(u.total_taps || 0);
+      document.getElementById('tid').textContent = u.telegram_id || '—';
+      document.getElementById('refLink').textContent = u.referral_code ? 'https://t.me/ebitocoinbot?start=ref_' + u.referral_code : 'Unavailable';
+      document.getElementById('friendsCount').textContent = Number(u.friends || 0);
+      document.getElementById('refEarn').textContent = numberFormat(u.referral_earnings || 0);
+    }
 
-<nav id="nav" class="nav"><button data-p="home" class="active" onclick="nav('home')"><b>🏠</b>Home</button><button data-p="mine" onclick="nav('mine')"><b>⛏️</b>Mine</button><button data-p="earn" onclick="nav('earn')"><b>🎁</b>Earn</button><button data-p="friends" onclick="nav('friends')"><b>👥</b>Friends</button><button data-p="games" onclick="nav('games')"><b>🎮</b>Games</button><button data-p="profile" onclick="nav('profile')"><b>👤</b>Profile</button></nav><div id="toast" class="toast"></div></div>
+    function renderCards() {
+      const cards = app.cards || [];
+      const filters = document.getElementById('filters');
+      const list = document.getElementById('cards');
+      const filterButtons = ['All', ...new Set(cards.map((c) => (c.category || 'General')).filter(Boolean))];
+      filters.innerHTML = filterButtons.map((cat, i) => `<button class="filter ${i === 0 ? 'active' : ''}" data-filter="${cat}">${cat}</button>`).join('');
+      filters.querySelectorAll('.filter').forEach((btn) => {
+        btn.onclick = () => {
+          filters.querySelectorAll('.filter').forEach((b) => b.classList.toggle('active', b === btn));
+          const selected = btn.dataset.filter || 'All';
+          const items = cards.filter((c) => selected === 'All' || (c.category || 'General') === selected);
+          list.innerHTML = items.map((card) => `
+            <div class="card">
+              <div class="row"><h3>${card.name || 'Card'}</h3><span class="gold">+${numberFormat(card.tap_bonus || 0)}</span></div>
+              <p>${card.description || 'Upgrade your mining power.'}</p>
+              <div class="row">
+                <small>Cost ${numberFormat(card.cost || 0)} EBC</small>
+                <button onclick="upgradeCard(${card.id})">UPGRADE</button>
+              </div>
+            </div>
+          `).join('') || '<div class="muted">No cards found.</div>';
+        };
+      });
+      const initialFilter = filters.querySelector('.filter.active') || filters.querySelector('.filter');
+      if (initialFilter) initialFilter.click();
+      document.getElementById('cardCount').textContent = `${cards.length} cards`;
+    }
 
-<script>
-(function(){
-  const box = document.getElementById('diagnostic');
-  const out = document.getElementById('diagStatus');
-  const lines = [];
-  function d(msg){
-    lines.push((new Date()).toLocaleTimeString()+"  "+msg);
-    if(out) out.textContent = lines.join("\n");
-    console.log("[EBiTO]", msg);
-  }
-  window.EBiTODiagnostic = {
-    show: function(msg){
-      if(box) box.style.display = "block";
-      d(msg);
-    },
-    ok: function(msg){ d("✅ "+msg); },
-    fail: function(msg){ d("❌ "+msg); if(box) box.style.display = "block"; }
-  };
+    function renderTasks() {
+      const tasks = app.tasks || [];
+      const host = document.getElementById('tasks');
+      host.innerHTML = tasks.length ? tasks.map((task) => `
+        <div class="card">
+          <div class="row"><h3>${task.title || 'Mission'}</h3><span class="gold">+${numberFormat(task.reward || 0)}</span></div>
+          <p>${task.description || 'Complete this mission.'}</p>
+          <button onclick="claimTask(${task.id})" ${task.claimed ? 'disabled' : ''}>${task.claimed ? 'CLAIMED' : 'CLAIM'}</button>
+        </div>
+      `).join('') : '<div class="muted">No tasks available.</div>';
+    }
 
-  window.addEventListener("error", function(e){
-    if(window.EBiTODiagnostic) window.EBiTODiagnostic.fail("JavaScript error: "+(e.message||"Unknown error"));
-  });
-  window.addEventListener("unhandledrejection", function(e){
-    const r=e.reason;
-    window.EBiTODiagnostic.fail("Unhandled promise error: "+(r && r.message ? r.message : String(r)));
-  });
+    function renderCombo() {
+      const combo = app.combo;
+      const host = document.getElementById('combo');
+      const homeHost = document.getElementById('comboHome');
+      const msg = document.getElementById('comboMsg');
+      const claimBtn = document.getElementById('claimCombo');
+      if (!combo || !combo.cards || combo.cards.length === 0) {
+        host.innerHTML = '<div class="muted">No combo available.</div>';
+        if (homeHost) homeHost.textContent = 'No combo available';
+        if (msg) msg.textContent = 'No combo available.';
+        if (claimBtn) claimBtn.disabled = true;
+        return;
+      }
+      const cards = combo.cards.map((card) => `
+        <div class="card">
+          <h3>${card.name || 'Card'}</h3>
+          <p>${card.description || 'Hidden card.'}</p>
+          <small>${card.category || 'General'}</small>
+        </div>
+      `).join('');
+      host.innerHTML = cards;
+      if (homeHost) homeHost.innerHTML = cards;
+      const isComplete = Boolean(combo.complete);
+      const isClaimed = Boolean(combo.claimed);
+      if (msg) msg.textContent = isClaimed ? 'Daily combo already claimed today.' : isComplete ? 'All 3 cards are complete. Claim the reward!' : 'Upgrade all 3 cards to claim the reward.';
+      if (claimBtn) {
+        claimBtn.disabled = isClaimed || !isComplete;
+        claimBtn.textContent = isClaimed ? 'CLAIMED' : 'CLAIM REWARD';
+      }
+    }
 
-  d("Page JavaScript started.");
-  d("Telegram library: "+(window.Telegram && window.Telegram.WebApp ? "FOUND" : "NOT FOUND"));
-  d("Supabase library: "+(window.supabase && typeof window.supabase.createClient==="function" ? "FOUND" : "NOT FOUND"));
+    function renderLeaders() {
+      const leaders = app.leaders || [];
+      document.getElementById('leaders').innerHTML = leaders.length ? leaders.map((u, i) => `
+        <div class="row" style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,.08);">
+          <span>#${i + 1} ${u.first_name || u.username || 'Player'}</span>
+          <b class="gold">${numberFormat(u.coins || 0)}</b>
+        </div>
+      `).join('') : '<div class="muted">No leaderboard data.</div>';
+    }
 
-  if(!window.supabase || typeof window.supabase.createClient!=="function"){
-    window.EBiTODiagnostic.fail("Supabase JavaScript library is unavailable. The main app cannot start.");
-  } else {
-    window.EBiTODiagnostic.ok("Supabase JavaScript library is available.");
-  }
+    async function fetchJson(url, options = {}) {
+      const res = await fetch(url, {
+        headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+        ...options
+      });
+      const text = await res.text();
+      let data = null;
+      try { data = text ? JSON.parse(text) : null; } catch { data = { raw: text }; }
+      if (!res.ok) {
+        throw new Error(data && data.error ? data.error : `HTTP ${res.status}`);
+      }
+      return data;
+    }
 
-  if(!window.Telegram || !window.Telegram.WebApp){
-    window.EBiTODiagnostic.fail("Telegram WebApp API is unavailable. If this is opened outside Telegram, Telegram authentication cannot work.");
-  } else {
-    window.EBiTODiagnostic.ok("Telegram WebApp API is available.");
-  }
-})();
-</script>
+    function demoUser() {
+      return {
+        telegram_id: '0',
+        first_name: 'Demo',
+        last_name: 'Player',
+        coins: 1200,
+        energy: 1000,
+        max_energy: 1000,
+        tap_power: 1,
+        total_taps: 0,
+        airdrop_points: 0,
+        level: 1,
+        referral_code: 'EBITO0',
+        profit_hour: 0,
+        friends: 0,
+        referral_earnings: 0
+      };
+    }
 
-<script>
-try {
-const URL='https://tdkrogqygwqmocntnjba.supabase.co',KEY='sb_publishable_o6IgAiYRQ5h1jdjE3ODpog_-HzJF4B',ADMIN='6457637080',db=supabase.createClient(URL,KEY),tg=window.Telegram?.WebApp,S={user:null,cards:[],tasks:[],combo:null,cat:'All',game:null,isAuthenticated:false};if(tg){tg.ready();tg.expand()}const $=x=>document.getElementById(x),money=x=>Number(x||0).toLocaleString(),init=()=>tg?.initData||'';function canTap(){return S.isAuthenticated}function canUpgrade(){return S.isAuthenticated}function canClaimTask(){return S.isAuthenticated}function canClaimCombo(){return S.isAuthenticated}function canPlayGame(){return S.isAuthenticated}function toast(x){$('toast').textContent=x;$('toast').classList.add('show');setTimeout(()=>$('toast').classList.remove('show'),2200)}function nav(p){document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));$(p).classList.add('active');document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.p===p));if(p==='leaderboard')leaders();if(p==='admin')admin();scrollTo(0,0)}async function fn(n,b={}){const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),10000);try{EBiTODiagnostic?.ok('Calling Supabase function: '+n);const r=await fetch(URL+'/functions/v1/'+n,{method:'POST',headers:{'Content-Type':'application/json','apikey':KEY,'Authorization':'Bearer '+KEY},body:JSON.stringify({...b,initData:init()}),signal:controller.signal});let text='';try{text=await r.text()}catch(_){throw Error('Could not read server response.')}let j={};try{j=text?JSON.parse(text):{}}catch(_){throw Error('Server returned non-JSON ('+r.status+'): '+text.slice(0,300))}if(!r.ok||j.success===false)throw Error(j.error||('HTTP '+r.status+' from '+n));return j}catch(e){if(e.name==='AbortError')throw Error(n+' timed out after 10 seconds.');throw e}finally{clearTimeout(timer)}}function render(){if(!S.user)return;let u=S.user;$('coins').textContent=money(u.coins);$('profit').textContent='+'+ money(u.profit_hour);$('power').textContent='+'+(u.tap_power||1);$('airdrop').textContent=money(u.airdrop_points);$('energyText').textContent=money(u.energy)+' / '+money(u.max_energy);$('fill').style.width=Math.max(0,Math.min(100,u.energy/u.max_energy*100))+'%';$('name').textContent=[u.first_name,u.last_name].filter(Boolean).join(' ')||'EBiTO Player';$('avatar').textContent=($('name').textContent[0]||'E').toUpperCase();$('level').textContent=u.level||1;$('taps').textContent=money(u.total_taps);$('tid').textContent=u.telegram_id;$('role').textContent=String(u.telegram_id)===ADMIN?'👑 Admin':'Player';$('refLink').textContent=u.referral_code?'https://t.me/EbitocoinBot?start=ref_'+u.referral_code:'Unavailable'}async function boot(){try{EBiTODiagnostic?.ok('Starting EBiTO boot process.');if(!tg)throw Error('Telegram WebApp is not available. Open the Mini App from Telegram.');if(!window.supabase||typeof supabase.createClient!=='function')throw Error('Supabase library is not loaded.');EBiTODiagnostic?.ok('Telegram initData length: '+(init().length));if(!init())throw Error('Telegram initData is empty. The app was probably opened outside the Telegram Mini App.');EBiTODiagnostic?.ok('Calling telegram-auth to authenticate user...');let r=await fn('telegram-auth');if(!r||!r.user)throw Error('telegram-auth returned no user.');S.user=r.user;S.isAuthenticated=true;render();$('status').textContent='CONNECTED';EBiTODiagnostic?.ok('✓ User authenticated successfully.');if(String(S.user.telegram_id)===ADMIN){let b=document.createElement('button');b.dataset.p='admin';b.innerHTML='<b>👑</b>Admin';b.onclick=()=>nav('admin');$('nav').appendChild(b)}EBiTODiagnostic?.ok('Loading app data...');await Promise.all([cards(),tasks(),combo(),leaders()]);EBiTODiagnostic?.ok('✓ All startup data loaded successfully.');}catch(e){S.isAuthenticated=false;$('status').textContent='OFFLINE';EBiTODiagnostic?.fail(e.message||String(e));toast(e.message||'Startup failed');}}function attachCoinListeners(){if(!S.isAuthenticated)return;try{$('coin').addEventListener('touchstart',e=>{e.preventDefault();if(canTap())tap(Math.min(8,e.touches.length))},{passive:false});$('coin').addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&canTap())tap(1)})}catch(e){EBiTODiagnostic?.fail('Error attaching coin listeners: '+e.message)}}async function tap(n){if(!canTap())return;try{let r=await fn('game-action',{action:'tap',count:n});if(r.user){S.user=r.user;render()}}catch(e){toast(e.message)}}async function cards(){try{let r=await db.from('upgrades').select('*').order('cost');if(r.error)throw r.error;S.cards=r.data||[];$('cardCount').textContent=S.cards.length+' cards';filters();drawCards()}catch(e){EBiTODiagnostic?.fail('cards() error: '+e.message)}}function filters(){try{let c=['All',...new Set(S.cards.map(x=>x.category||'General'))];$('filters').innerHTML=c.map(x=>`<button class="filter ${x===S.cat?'active':''}" onclick="S.cat='${x.replace(/'/g,"'")}';filters();drawCards()">${x}</button>`).join('')}catch(e){EBiTODiagnostic?.fail('filters() error: '+e.message)}}function drawCards(){try{let a=S.cards.filter(x=>S.cat==='All'||(x.category||'General')===S.cat);$('cards').innerHTML=a.map(x=>`<div class="card"><div class="row"><div><h3>${x.icon||'🛠️'} ${esc(x.name)}</h3><small>${esc(x.category||'General')}</small></div><b class="gold">+${money(x.tap_bonus)}/tap</b></div><p>${esc(x.description||'Upgrade your mining power.')}</p><div class="row"><small>Cost ${money(x.cost)} EBC</small><button ${canUpgrade()?'':'disabled'} onclick="upgrade(${x.id})">UPGRADE</button></div></div>`).join('')}catch(e){EBiTODiagnostic?.fail('drawCards() error: '+e.message)}}async function upgrade(id){if(!canUpgrade())return;try{let r=await fn('game-action',{action:'upgrade',upgrade_id:id});if(r.user){S.user=r.user;render();toast('Upgrade purchased')}}catch(e){toast(e.message)}}async function tasks(){try{let r=await db.from('tasks').select('*').eq('active',true).order('id');if(!r.error){S.tasks=r.data||[];$('tasks').innerHTML=S.tasks.map(t=>`<div class="card"><div class="row"><b>${esc(t.title)}</b><b class="gold">+${money(t.reward)}</b></div><p>${esc(t.description||'Complete mission')}</p><button class="primary" ${canClaimTask()?'':'disabled'} onclick="task(${t.id},'${encodeURIComponent(t.url||'')}' )">CLAIM</button></div>`).join('')||'<div class="notice">No active tasks.</div>'}}catch(e){EBiTODiagnostic?.fail('tasks() error: '+e.message)}}async function task(id,url){if(!canClaimTask())return;try{if(url)window.open(decodeURIComponent(url),'_blank');let r=await fn('game-action',{action:'task',task_id:id});if(r.user){S.user=r.user;render();toast('Reward claimed')}}catch(e){toast(e.message)}}async function combo(){try{let r=await fn('daily-combo');if(r.combo){S.combo=r.combo;drawCombo()}}catch(e){EBiTODiagnostic?.fail('combo() error: '+e.message)}}function drawCombo(){try{if(!S.combo)return;let h=S.combo.cards.map(c=>`<div class="stat"><b>${c.icon||'🛠️'}</b><small>${esc(c.name)}</small></div>`).join('');$('combo').innerHTML=h;$('comboHome').innerHTML='<div class="grid">'+h+'</div>';$('comboMsg').textContent=S.combo.complete?'All 3 cards completed!':'Upgrade all 3 selected cards.';$('claimCombo').disabled=!S.combo.complete||S.combo.claimed||!canClaimCombo();$('claimCombo').textContent=S.combo.claimed?'REWARD CLAIMED':'COMPLETE COMBO'}catch(e){EBiTODiagnostic?.fail('drawCombo() error: '+e.message)}}async function claimCombo(){if(!canClaimCombo())return;try{let r=await fn('daily-combo',{action:'claim'});if(r.user&&r.combo){S.user=r.user;S.combo=r.combo;render();drawCombo();toast('Daily Combo claimed')}}catch(e){toast(e.message)}}async function leaders(){try{let r=await db.from('users').select('first_name,username,coins').order('coins',{ascending:false}).limit(20);if(!r.error)$('leaders').innerHTML=r.data.map((u,i)=>`<div class="row"><span>#${i+1} ${esc(u.first_name||u.username||'Player')}</span><b>${money(u.coins)}</b></div>`).join('')}catch(e){EBiTODiagnostic?.fail('leaders() error: '+e.message)}}async function admin(){try{if(String(S.user?.telegram_id)!==ADMIN)return;let r=await fn('admin',{action:'stats'});if(r.stats&&r.recent){$('aUsers').textContent=money(r.stats.users);$('aCoins').textContent=money(r.stats.coins);$('aTaps').textContent=money(r.stats.taps);$('aList').innerHTML=r.recent.map(u=>`<div class="row"><span>${esc(u.first_name||u.username||'Player')}</span><b>${money(u.coins)}</b></div>`).join('')}}catch(e){EBiTODiagnostic?.fail('admin() error: '+e.message)}}function startGame(){if(!canPlayGame())return;try{S.game={score:0,end:Date.now()+30000};$('game').classList.remove('hidden');$('score').textContent=0;let t=setInterval(()=>{if(!S.game){clearInterval(t);return}let n=Math.max(0,S.game.end-Date.now());$('timer').textContent=Math.ceil(n/1000);if(!n){clearInterval(t);finishGame()}},100)}catch(e){EBiTODiagnostic?.fail('startGame() error: '+e.message)}}function gameTap(){if(!S.game||!canPlayGame())return;try{if(Date.now()<S.game.end){S.game.score++;$('score').textContent=S.game.score}}catch(e){EBiTODiagnostic?.fail('gameTap() error: '+e.message)}}async function finishGame(){try{let s=S.game.score;S.game=null;$('game').classList.add('hidden');let r=await fn('game-action',{action:'game',score:s});if(r.user&&r.reward){S.user=r.user;render();toast('Game reward +'+money(r.reward)+' EBC')}}catch(e){toast(e.message)}}async function copyRef(){try{await navigator.clipboard.writeText($('refLink').textContent);toast('Copied')}catch(e){toast('Copy failed')}}function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}boot();attachCoinListeners();
-} catch(e) {
-  EBiTODiagnostic?.fail('FATAL: '+e.message);
-  document.getElementById('status').textContent='ERROR';
-}
-</script>
+    async function authUser() {
+      if (!window.supabase || typeof window.supabase.createClient !== 'function') {
+        throw new Error('Supabase is not loaded.');
+      }
+      if (!app.tg || !app.tg.initData) {
+        app.demoMode = true;
+        app.user = demoUser();
+        renderUser();
+        setStatus('DEMO');
+        return;
+      }
 
-<script>
-setTimeout(function(){
-  const status=document.getElementById('status');
-  if(status && status.textContent==='CONNECTING'){
-    window.EBiTODiagnostic?.fail('Startup is still CONNECTING after 8 seconds. This means boot() did not complete.');
-  }
-},8000);
-</script>
-</body></html>
+      app.db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+        auth: { persistSession: false, autoRefreshToken: false }
+      });
+
+      const res = await fetchJson(`${SUPABASE_URL}/functions/v1/telegram-auth`, {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_KEY },
+        body: JSON.stringify({ initData: app.tg.initData })
+      });
+      if (!res || !res.ok || !res.user) throw new Error(res && res.error ? res.error : 'Authentication failed.');
+      app.user = res.user;
+      app.user.telegram_id = String(app.user.telegram_id || app.tg.initDataUnsafe?.user?.id || '0');
+      app.demoMode = false;
+      renderUser();
+    }
+
+    async function loadCards() {
+      const { data, error } = await app.db.from('upgrades').select('*').order('id');
+      if (error) throw error;
+      app.cards = data || [];
+      renderCards();
+    }
+
+    async function loadTasks() {
+      const { data, error } = await app.db.from('tasks').select('*').eq('active', true).order('id');
+      if (error) throw error;
+      app.tasks = (data || []).map((task) => ({ ...task, claimed: false }));
+      renderTasks();
+    }
+
+    async function loadCombo() {
+      const { data, error } = await app.db.from('daily_combos').select('*').order('combo_date', { ascending: false }).limit(1);
+      if (error) throw error;
+      app.combo = data && data[0] ? { ...data[0], cards: [] } : null;
+      if (app.combo && app.cards && app.cards.length) {
+        const ids = [app.combo.card_1, app.combo.card_2, app.combo.card_3];
+        app.combo.cards = app.cards.filter((card) => ids.includes(card.id));
+      }
+      renderCombo();
+    }
+
+    async function loadLeaderboard() {
+      const { data, error } = await app.db.from('users').select('first_name, username, coins').order('coins', { ascending: false }).limit(10);
+      if (error) throw error;
+      app.leaders = data || [];
+      renderLeaders();
+    }
+
+    async function boot() {
+      try {
+        if (!window.supabase || typeof window.supabase.createClient !== 'function') {
+          throw new Error('Supabase JavaScript library is unavailable.');
+        }
+        if (!app.tg) {
+          app.demoMode = true;
+          app.user = demoUser();
+          app.db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+            auth: { persistSession: false, autoRefreshToken: false }
+          });
+          setStatus('DEMO');
+          document.getElementById('status').textContent = 'DEMO';
+          window.EBiTODiagnostic.ok('Telegram WebApp is unavailable; demo mode enabled.');
+        } else {
+          await authUser();
+        }
+        renderUser();
+        if (app.db) {
+          await Promise.all([loadCards(), loadTasks(), loadCombo(), loadLeaderboard()]);
+        }
+        setStatus('READY');
+        window.EBiTODiagnostic.ok('Startup finished successfully.');
+      } catch (err) {
+        const msg = err && err.message ? err.message : String(err);
+        setStatus('ERROR');
+        window.EBiTODiagnostic.fail(msg);
+        console.error(msg);
+      }
+    }
+
+    async function upgradeCard(cardId) {
+      if (!app.user && !app.demoMode) return toast('Login required.');
+      try {
+        const payload = {
+          initData: app.tg ? app.tg.initData : '',
+          action: 'upgrade',
+          upgradeId: Number(cardId)
+        };
+        const res = await fetchJson(`${SUPABASE_URL}/functions/v1/game-action`, {
+          method: 'POST',
+          headers: { 'apikey': SUPABASE_KEY },
+          body: JSON.stringify(payload)
+        });
+        if (res && res.user) app.user = res.user;
+        renderUser();
+        toast('Upgrade purchased');
+        await loadCards();
+      } catch (err) {
+        toast(err && err.message ? err.message : 'Upgrade failed');
+      }
+    }
+
+    async function claimTask(taskId) {
+      if (!app.user && !app.demoMode) return toast('Login required.');
+      try {
+        const res = await fetchJson(`${SUPABASE_URL}/functions/v1/game-action`, {
+          method: 'POST',
+          headers: { 'apikey': SUPABASE_KEY },
+          body: JSON.stringify({ initData: app.tg ? app.tg.initData : '', action: 'task', taskId })
+        });
+        if (res && res.user) app.user = res.user;
+        toast('Task reward claimed');
+        await loadTasks();
+        renderUser();
+      } catch (err) {
+        toast(err && err.message ? err.message : 'Task failed');
+      }
+    }
+
+    async function claimCombo() {
+      if (!app.user && !app.demoMode) return toast('Login required.');
+      try {
+        const res = await fetchJson(`${SUPABASE_URL}/functions/v1/daily-combo`, {
+          method: 'POST',
+          headers: { 'apikey': SUPABASE_KEY },
+          body: JSON.stringify({ initData: app.tg ? app.tg.initData : '', action: 'claim' })
+        });
+        if (res && res.user) app.user = res.user;
+        toast('Daily combo claimed');
+        await loadCombo();
+        renderUser();
+      } catch (err) {
+        toast(err && err.message ? err.message : 'Combo claim failed');
+      }
+    }
+
+    function startGame() {
+      if (!app.tg && !app.demoMode) return toast('Open in Telegram to play.');
+      const gameBox = document.getElementById('gameBox');
+      const timerEl = document.getElementById('timer');
+      const scoreEl = document.getElementById('score');
+      if (app.game.running) return;
+      app.game.running = true;
+      app.game.score = 0;
+      app.game.start = Date.now();
+      gameBox.classList.remove('hidden');
+      timerEl.textContent = '30';
+      scoreEl.textContent = '0';
+      app.game.timer = setInterval(() => {
+        const elapsed = Math.max(0, 30 - Math.floor((Date.now() - app.game.start) / 1000));
+        timerEl.textContent = String(elapsed);
+        if (elapsed <= 0) {
+          clearInterval(app.game.timer);
+          finishGame();
+        }
+      }, 100);
+    }
+
+    async function finishGame() {
+      if (!app.game.running) return;
+      app.game.running = false;
+      const score = Number(app.game.score || 0);
+      const gameBox = document.getElementById('gameBox');
+      gameBox.classList.add('hidden');
+      try {
+        const res = await fetchJson(`${SUPABASE_URL}/functions/v1/game-action`, {
+          method: 'POST',
+          headers: { 'apikey': SUPABASE_KEY },
+          body: JSON.stringify({ initData: app.tg ? app.tg.initData : '', action: 'game', score })
+        });
+        if (res && res.user) app.user = res.user;
+        toast(`Game finished: ${score} taps`);
+        renderUser();
+      } catch (err) {
+        toast(err && err.message ? err.message : 'Game failed');
+      }
+    }
+
+    function gameTap() {
+      if (!app.game.running) return;
+      app.game.score += 1;
+      document.getElementById('score').textContent = String(app.game.score);
+    }
+
+    function copyRef() {
+      const text = document.getElementById('refLink').textContent || '';
+      navigator.clipboard?.writeText(text).then(() => toast('Referral link copied')).catch(() => toast('Copy failed'));
+    }
+
+    boot();
+  </script>
+</body>
+</html>
